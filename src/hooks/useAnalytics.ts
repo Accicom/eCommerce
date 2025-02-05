@@ -17,13 +17,15 @@ declare global {
   }
 }
 
+const GA_TRACKING_ID = 'G-T096TRJ4J9';
+
 export const useAnalytics = () => {
   const location = useLocation();
 
   // Track page views
   useEffect(() => {
     if (typeof window.gtag !== 'undefined') {
-      window.gtag('config', 'G-XXXXXXXXXX', {
+      window.gtag('config', GA_TRACKING_ID, {
         page_path: location.pathname + location.search
       });
     }
