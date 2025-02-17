@@ -18,7 +18,7 @@ export default function Footer() {
             <h4 className="text-lg font-semibold mb-4">Enlaces Rápidos</h4>
             <ul className="space-y-2">
               <li>
-                <Link to="https://wa.me/3513486125" className="text-gray-400 hover:text-white transition-colors">
+                <Link to="https://wa.me/5493513486125" className="text-gray-400 hover:text-white transition-colors">
                   Quiero un préstamo
                 </Link>
               </li>
@@ -28,12 +28,12 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link to="/contacto" className="text-gray-400 hover:text-white transition-colors">
+                <Link to="#" className="text-gray-400 hover:text-white transition-colors">
                   Contacto
                 </Link>
               </li>
               <li>
-                <Link to="/faqs" className="text-gray-400 hover:text-white transition-colors">
+                <Link to="#" className="text-gray-400 hover:text-white transition-colors">
                   FAQ
                 </Link>
               </li>
@@ -44,7 +44,7 @@ export default function Footer() {
             <h4 className="text-lg font-semibold mb-4">Legal</h4>
             <ul className="space-y-2">
               <li>
-                <Link to="/terminos" className="text-gray-400 hover:text-white transition-colors">
+                <Link to="#" className="text-gray-400 hover:text-white transition-colors">
                   Términos y Condiciones
                 </Link>
               </li>
