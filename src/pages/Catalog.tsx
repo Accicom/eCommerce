@@ -45,6 +45,7 @@ export default function Catalog() {
       const { data, error } = await supabase
         .from('products')
         .select('*')
+        .eq('visible', true) // Only fetch visible products
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -60,13 +61,14 @@ export default function Catalog() {
   const filteredProducts = products.filter(product => {
     const matchesSearch = 
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.code.toLowerCase().includes(searchTerm.toLowerCase());
+      product.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (product.brand?.toLowerCase() || '').includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory ? product.category === selectedCategory : true;
     return matchesSearch && matchesCategory;
   });
 
   const handleAddToCart = (e: React.MouseEvent, product: Product) => {
-    e.preventDefault(); // Prevenir la navegación si el botón está dentro de un Link
+    e.preventDefault();
     addToCart(product);
     trackEvent('add_to_cart', 'ecommerce', product.name, Number(product.price));
   };
@@ -106,6 +108,9 @@ export default function Catalog() {
           <h3 className="text-lg font-semibold text-gray-800 mb-1 line-clamp-2 min-h-[3.5rem]">
             {product.name}
           </h3>
+          {product.brand && (
+            <p className="text-gray-600 text-sm mb-1">{product.brand}</p>
+          )}
           <p className="text-gray-400 text-sm mb-1">Código: {product.code}</p>
           <p className="text-xl font-bold text-gray-800 mb-2">${formatPrice(Number(product.price))}</p>
           <div className="flex items-center text-green-600 text-sm mb-2">
@@ -150,7 +155,7 @@ export default function Catalog() {
         <div className="relative">
           <input
             type="text"
-            placeholder="Buscar por nombre o código de producto..."
+            placeholder="Buscar por nombre, código o marca..."
             value={searchTerm}
             onChange={(e) => handleSearch(e.target.value)}
             className="w-full px-4 py-2 pl-10 pr-4 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"

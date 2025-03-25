@@ -77,6 +77,9 @@ export default function Products() {
       category: formData.get('category') as string,
       description: formData.get('description') as string,
       featured: formData.get('featured') === 'true',
+      brand: formData.get('brand') as string || null,
+      supplier: formData.get('supplier') as string || null,
+      visible: true, // New products are visible by default
     };
 
     try {
@@ -408,6 +411,31 @@ export default function Products() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Marca
+                      </label>
+                      <input
+                        name="brand"
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                        defaultValue={currentProduct?.brand}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Proveedor
+                      </label>
+                      <input
+                        name="supplier"
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                        defaultValue={currentProduct?.supplier}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
                         Categoría
                       </label>
                       <select
@@ -513,6 +541,8 @@ export default function Products() {
                         <li>image (URL de la imagen - obligatorio)</li>
                         <li>description (Descripción - opcional)</li>
                         <li>featured (Destacado - opcional, valores: true/false)</li>
+                        <li>brand (Marca - opcional)</li>
+                        <li>supplier (Proveedor - opcional)</li>
                       </ul>
                     </li>
                     <li>Asegúrese de que los códigos no estén duplicados</li>

@@ -20,6 +20,10 @@ export interface Database {
           featured: boolean
           created_at: string
           updated_at: string
+          description?: string
+          brand?: string
+          supplier?: string
+          visible: boolean
         }
         Insert: {
           id?: string
@@ -31,6 +35,10 @@ export interface Database {
           featured?: boolean
           created_at?: string
           updated_at?: string
+          description?: string
+          brand?: string
+          supplier?: string
+          visible?: boolean
         }
         Update: {
           id?: string
@@ -42,6 +50,10 @@ export interface Database {
           featured?: boolean
           created_at?: string
           updated_at?: string
+          description?: string
+          brand?: string
+          supplier?: string
+          visible?: boolean
         }
       }
       categories: {
