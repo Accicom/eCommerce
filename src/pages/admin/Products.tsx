@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Edit2, Trash2, ArrowLeft, Star, Upload, FileSpreadsheet } from 'lucide-react';
+import { Plus, Edit2, Trash2, ArrowLeft, Star, Upload, FileSpreadsheet, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { read, utils } from 'xlsx';
 import type { Database } from '../../lib/database.types';
@@ -118,6 +118,20 @@ export default function Products() {
       } catch (error) {
         console.error('Error deleting product:', error);
       }
+    }
+  };
+
+  const toggleVisibility = async (product: Product) => {
+    try {
+      const { error } = await supabase
+        .from('products')
+        .update({ visible: !product.visible })
+        .eq('id', product.id);
+
+      if (error) throw error;
+      fetchProducts();
+    } catch (error) {
+      console.error('Error updating visibility:', error);
     }
   };
 
@@ -345,6 +359,24 @@ export default function Products() {
                         <Star className="h-5 w-5 fill-current" />
                       </button>
                     </td>
+
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <button
+                        onClick={() => toggleVisibility(product)}
+                        className={`${
+                          product.visible ? 'text-green-500' : 'text-gray-400'
+                        } hover:text-green-600 transition-colors`}
+                        title={product.visible ? 'Ocultar producto' : 'Mostrar producto'}
+                      >
+                        {product.visible ? (
+                          <Eye className="h-5 w-5" />
+                        ) : (
+                          <EyeOff className="h-5 w-5" />
+                        )}
+                      </button>
+                    </td>    
+
+
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button
                         onClick={() => {
