@@ -18,6 +18,7 @@ import Categories from './pages/admin/Categories';
 import BannerManagement from './pages/admin/Banner';
 import Subscriptions from './pages/admin/Subscriptions';
 import PopupManagement from './pages/admin/PopupManagement';
+import Orders from './pages/admin/Orders';
 import { CartProvider } from './context/CartContext';
 import Cart from './components/Cart';
 import { useAnalytics } from './hooks/useAnalytics';
@@ -77,6 +78,7 @@ function App() {
             <Route path="/admin/banner" element={<BannerManagement />} />
             <Route path="/admin/subscriptions" element={<Subscriptions />} />
             <Route path="/admin/popup" element={<PopupManagement />} />
+            <Route path="/admin/orders" element={<Orders />} />
           </Routes>
         </AnalyticsWrapper>
       </Router>

@@ -3,24 +3,55 @@ import { ShoppingCart, Plus, Minus, X } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { formatPrice } from '../utils/formatters';
 import { useAnalytics } from '../hooks/useAnalytics';
+import { supabase } from '../lib/supabase';
 
 export default function Cart() {
   const [isOpen, setIsOpen] = useState(false);
   const { cart, removeFromCart, updateQuantity, totalAmount } = useCart();
   const { trackEvent } = useAnalytics();
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     const orderNumber = Math.floor(Math.random() * 1000000);
-    const message = encodeURIComponent(
-      `¡Hola! Me interesa finalizar mi compra 🛍️\n\nNúmero de orden: #${orderNumber}\n\nProductos:\n${cart
-        .map(item => `- ${item.product.name} (x${item.quantity}) - $${formatPrice(Number(item.product.price) * item.quantity)}`)
-        .join('\n')}\n\nTotal: $${formatPrice(totalAmount)}`
-    );
+    const message = `¡Hola! Me interesa finalizar mi compra 🛍️\n\nNúmero de orden: #${orderNumber}\n\nProductos:\n${cart
+      .map(item => `- ${item.product.name} (x${item.quantity}) - $${formatPrice(Number(item.product.price) * item.quantity)}`)
+      .join('\n')}\n\nTotal: $${formatPrice(totalAmount)}`;
 
-    // Track checkout event
-    trackEvent('begin_checkout', 'ecommerce', `Order #${orderNumber}`, totalAmount);
-    
-    window.open(`https://wa.me/5493513486125?text=${message}`, '_blank');
+    try {
+      // Check if user is subscribed to newsletter
+      const { data: subscriber } = await supabase
+        .from('newsletter_subscribers')
+        .select('email')
+        .eq('status', 'active')
+        .maybeSingle();
+
+      // Save completed order
+      const orderData = {
+        order_number: `#${orderNumber}`,
+        user_email: subscriber?.email || null,
+        order_data: cart.map(item => ({
+          product_id: item.product.id,
+          product_name: item.product.name,
+          quantity: item.quantity,
+          price: item.product.price
+        })),
+        total_amount: totalAmount,
+        whatsapp_message: message
+      };
+
+      const { error } = await supabase
+        .from('completed_orders')
+        .insert([orderData]);
+
+      if (error) throw error;
+
+      // Track checkout event in Google Analytics
+      trackEvent('begin_checkout', 'ecommerce', `Order #${orderNumber}`, totalAmount);
+      
+      // Open WhatsApp with the message
+      window.open(`https://wa.me/5493513486125?text=${encodeURIComponent(message)}`, '_blank');
+    } catch (error) {
+      console.error('Error saving completed order:', error);
+    }
   };
 
   return (

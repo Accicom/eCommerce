@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 import type { Database } from '../lib/database.types';
 
 type Product = Database['public']['Tables']['products']['Row'];
@@ -26,6 +27,47 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     localStorage.setItem('cart', JSON.stringify(cart));
+
+    // Save abandoned cart when items exist
+    if (cart.length > 0) {
+      const saveAbandonedCart = async () => {
+        try {
+          // Check if user is subscribed to newsletter
+          const { data: subscriber } = await supabase
+            .from('newsletter_subscribers')
+            .select('email')
+            .eq('status', 'active')
+            .maybeSingle();
+
+          const cartData = {
+            user_email: subscriber?.email || null,
+            cart_data: cart.map(item => ({
+              product_id: item.product.id,
+              product_name: item.product.name,
+              quantity: item.quantity,
+              price: item.product.price
+            })),
+            total_amount: cart.reduce((sum, item) => sum + Number(item.product.price) * item.quantity, 0)
+          };
+
+          const { error } = await supabase
+            .from('abandoned_carts')
+            .insert([cartData]);
+
+          if (error) throw error;
+        } catch (error) {
+          console.error('Error saving abandoned cart:', error);
+        }
+      };
+
+      // Save cart data when user is about to leave
+      const handleBeforeUnload = () => {
+        saveAbandonedCart();
+      };
+
+      window.addEventListener('beforeunload', handleBeforeUnload);
+      return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }
   }, [cart]);
 
   const addToCart = (product: Product) => {

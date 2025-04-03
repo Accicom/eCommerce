@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Package, Image, LogOut, Tag, Mail, MessageSquare } from 'lucide-react';
+import { Package, Image, LogOut, Tag, Mail, MessageSquare, ShoppingCart } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 export default function Dashboard() {
@@ -123,6 +123,21 @@ export default function Dashboard() {
             </div>
             <p className="text-gray-600">
               Configura los mensajes y opciones del pop-up de suscripción.
+            </p>
+          </div>
+
+          <div
+            onClick={() => navigate('/admin/orders')}
+            className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer"
+          >
+            <div className="flex items-center mb-4">
+              <ShoppingCart className="h-8 w-8 text-blue-600" />
+              <h2 className="text-xl font-semibold text-gray-800 ml-3">
+                Órdenes y Carritos
+              </h2>
+            </div>
+            <p className="text-gray-600">
+              Visualiza órdenes completadas y carritos abandonados.
             </p>
           </div>
         </div>
