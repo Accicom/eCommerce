@@ -25,12 +25,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     return savedCart ? JSON.parse(savedCart) : [];
   });
 
+  // Save cart to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem('cart', JSON.stringify(cart));
+  }, [cart]);
 
-    // Save abandoned cart when items exist
-    if (cart.length > 0) {
-      const saveAbandonedCart = async () => {
+  // Save abandoned cart whenever cart changes and has items
+  useEffect(() => {
+    const saveAbandonedCart = async () => {
+      if (cart.length > 0) {
         try {
           // Check if user is subscribed to newsletter
           const { data: subscriber } = await supabase
@@ -50,6 +53,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             total_amount: cart.reduce((sum, item) => sum + Number(item.product.price) * item.quantity, 0)
           };
 
+          // Delete any existing abandoned cart for this user
+          if (subscriber?.email) {
+            await supabase
+              .from('abandoned_carts')
+              .delete()
+              .eq('user_email', subscriber.email);
+          }
+
+          // Save new abandoned cart
           const { error } = await supabase
             .from('abandoned_carts')
             .insert([cartData]);
@@ -58,16 +70,24 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         } catch (error) {
           console.error('Error saving abandoned cart:', error);
         }
-      };
+      }
+    };
 
-      // Save cart data when user is about to leave
-      const handleBeforeUnload = () => {
-        saveAbandonedCart();
-      };
+    // Save cart data when user is about to leave
+    const handleBeforeUnload = () => {
+      saveAbandonedCart();
+    };
 
-      window.addEventListener('beforeunload', handleBeforeUnload);
-      return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-    }
+    // Save cart periodically while user is browsing
+    const intervalId = setInterval(saveAbandonedCart, 30000); // Every 30 seconds
+    
+    // Save cart when user leaves
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
   }, [cart]);
 
   const addToCart = (product: Product) => {
