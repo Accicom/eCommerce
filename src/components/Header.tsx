@@ -43,14 +43,14 @@ export default function Header() {
               <CreditCard className="w-4 h-4 mr-1" />
               Catálogo
             </a>
-            <Link to="/contacto" className="text-gray-600 hover:text-blue-600 flex items-center">
+            {/* <Link to="/contacto" className="text-gray-600 hover:text-blue-600 flex items-center">
               <Phone className="w-4 h-4 mr-1" />
               Contacto
-            </Link>
-            <Link to="/faq" className="text-gray-600 hover:text-blue-600 flex items-center">
+            </Link> */}
+            {/* <Link to="/faq" className="text-gray-600 hover:text-blue-600 flex items-center">
               <HelpCircle className="w-4 h-4 mr-1" />
               FAQ
-            </Link>
+            </Link> */}
           </nav>
 
           <button 
@@ -82,12 +82,12 @@ export default function Header() {
               >
                 Catálogo
               </a>
-              <Link to="/contacto" className="block px-3 py-2 text-gray-600 hover:text-blue-600">
+              {/* <Link to="/contacto" className="block px-3 py-2 text-gray-600 hover:text-blue-600">
                 Contacto
-              </Link>
-              <Link to="/faq" className="block px-3 py-2 text-gray-600 hover:text-blue-600">
+              </Link> */}
+              {/* <Link to="/faq" className="block px-3 py-2 text-gray-600 hover:text-blue-600">
                 FAQ
-              </Link>
+              </Link> */}
             </div>
           </div>
         )}
