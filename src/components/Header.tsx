@@ -19,7 +19,7 @@ export default function Header() {
           <div className="flex items-center">
             <Link to="/" className="flex items-center">
               <img 
-                src="https://i.ibb.co/1XwxY9x/Logo-Accicom-HD-sin-fondo.png" 
+                src="https://i.ibb.co/tMLmv5dG/Logo-Accicom-HD-sin-fondo.png" 
                 alt="Accicom" 
                 className="h-8"
               />
