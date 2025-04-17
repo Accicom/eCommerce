@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Truck, ShoppingCart, ArrowLeft } from 'lucide-react';
+import { Truck, MessageCircle, ArrowLeft } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useCart } from '../context/CartContext';
 import { formatPrice } from '../utils/formatters';
 import { useAnalytics } from '../hooks/useAnalytics';
 import type { Database } from '../lib/database.types';
@@ -13,7 +12,6 @@ export default function ProductDetail() {
   const { code } = useParams();
   const [product, setProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { addToCart } = useCart();
   const { trackEvent } = useAnalytics();
 
   useEffect(() => {
@@ -43,10 +41,39 @@ export default function ProductDetail() {
     }
   };
 
-  const handleAddToCart = () => {
-    if (product) {
-      addToCart(product);
-      trackEvent('add_to_cart', 'ecommerce', product.name, Number(product.price));
+  const handleWhatsAppClick = async () => {
+    if (!product) return;
+
+    const message = `¡Hola! Me interesa el siguiente producto:\n\n${product.name}\nCódigo: ${product.code}\nPrecio: $${formatPrice(Number(product.price))}`;
+
+    try {
+      // Save as completed order
+      const orderNumber = Math.floor(Math.random() * 1000000);
+      const orderData = {
+        order_number: `#${orderNumber}`,
+        order_data: [{
+          product_id: product.id,
+          product_name: product.name,
+          quantity: 1,
+          price: product.price
+        }],
+        total_amount: product.price,
+        whatsapp_message: message
+      };
+
+      const { error } = await supabase
+        .from('completed_orders')
+        .insert([orderData]);
+
+      if (error) throw error;
+
+      // Track conversion event
+      trackEvent('conversion', 'whatsapp', product.name, Number(product.price));
+      
+      // Open WhatsApp
+      window.open(`https://wa.me/5493513486125?text=${encodeURIComponent(message)}`, '_blank');
+    } catch (error) {
+      console.error('Error saving order:', error);
     }
   };
 
@@ -124,12 +151,12 @@ export default function ProductDetail() {
               </div>
 
               <button
-                onClick={handleAddToCart}
-                className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg
-                hover:bg-blue-700 transition-colors flex items-center justify-center"
+                onClick={handleWhatsAppClick}
+                className="w-full bg-green-600 text-white px-6 py-3 rounded-lg
+                hover:bg-green-700 transition-colors flex items-center justify-center"
               >
-                <ShoppingCart className="w-5 h-5 mr-2" />
-                Agregar al carrito
+                <MessageCircle className="w-5 h-5 mr-2" />
+                Me interesa
               </button>
             </div>
           </div>

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, Plus, Minus, X, Search, Truck } from 'lucide-react';
+import { MessageCircle, Search, Truck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { useCart } from '../context/CartContext';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { formatPrice } from '../utils/formatters';
 import type { Database } from '../lib/database.types';
@@ -18,7 +17,6 @@ export default function Catalog() {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const { addToCart } = useCart();
   const { trackEvent } = useAnalytics();
 
   useEffect(() => {
@@ -45,7 +43,7 @@ export default function Catalog() {
       const { data, error } = await supabase
         .from('products')
         .select('*')
-        .eq('visible', true) // Only fetch visible products
+        .eq('visible', true)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -67,10 +65,38 @@ export default function Catalog() {
     return matchesSearch && matchesCategory;
   });
 
-  const handleAddToCart = (e: React.MouseEvent, product: Product) => {
-    e.preventDefault();
-    addToCart(product);
-    trackEvent('add_to_cart', 'ecommerce', product.name, Number(product.price));
+  const handleWhatsAppClick = async (product: Product) => {
+    const message = `¡Hola! Me interesa el siguiente producto:\n\n${product.name}\nCódigo: ${product.code}\nPrecio: $${formatPrice(Number(product.price))}`;
+
+    try {
+      // Save as completed order
+      const orderNumber = Math.floor(Math.random() * 1000000);
+      const orderData = {
+        order_number: `#${orderNumber}`,
+        order_data: [{
+          product_id: product.id,
+          product_name: product.name,
+          quantity: 1,
+          price: product.price
+        }],
+        total_amount: product.price,
+        whatsapp_message: message
+      };
+
+      const { error } = await supabase
+        .from('completed_orders')
+        .insert([orderData]);
+
+      if (error) throw error;
+
+      // Track conversion event
+      trackEvent('conversion', 'whatsapp', product.name, Number(product.price));
+      
+      // Open WhatsApp
+      window.open(`https://wa.me/5493513486125?text=${encodeURIComponent(message)}`, '_blank');
+    } catch (error) {
+      console.error('Error saving order:', error);
+    }
   };
 
   const handleCategorySelect = (categoryName: string | null) => {
@@ -126,12 +152,12 @@ export default function Catalog() {
       </Link>
       <div className="px-4 pb-4">
         <button
-          onClick={(e) => handleAddToCart(e, product)}
-          className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg
-          hover:bg-blue-700 transition-colors flex items-center justify-center text-sm"
+          onClick={() => handleWhatsAppClick(product)}
+          className="w-full bg-green-600 text-white px-4 py-2 rounded-lg
+          hover:bg-green-700 transition-colors flex items-center justify-center text-sm"
         >
-          <ShoppingCart className="w-4 h-4 mr-2" />
-          Agregar al carrito
+          <MessageCircle className="w-4 h-4 mr-2" />
+          Me interesa
         </button>
       </div>
     </div>

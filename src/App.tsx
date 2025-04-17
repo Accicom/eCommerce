@@ -19,8 +19,6 @@ import BannerManagement from './pages/admin/Banner';
 import Subscriptions from './pages/admin/Subscriptions';
 import PopupManagement from './pages/admin/PopupManagement';
 import Orders from './pages/admin/Orders';
-import { CartProvider } from './context/CartContext';
-import Cart from './components/Cart';
 import { useAnalytics } from './hooks/useAnalytics';
 
 // Analytics wrapper component
@@ -31,58 +29,54 @@ function AnalyticsWrapper({ children }: { children: React.ReactNode }) {
 
 function App() {
   return (
-    <CartProvider>
-      <Router>
-        <AnalyticsWrapper>
-          <Routes>
-            {/* Rutas públicas */}
-            <Route path="/" element={
-              <div className="min-h-screen bg-gray-100">
-                <Header />
-                <main>
-                  <Banner />
-                  <MainOptions />
-                  <Benefits />
-                  <Testimonials />
-                  <FAQ />
-                  <ContactForm />
-                </main>
-                <Footer />
-                <WhatsAppButton />
-              </div>
-            } />
-            <Route path="/catalogo" element={
-              <div className="min-h-screen bg-gray-100">
-                <Header />
-                <Catalog />
-                <Footer />
-                <WhatsAppButton />
-                <Cart />
-              </div>
-            } />
-            <Route path="/producto/:code" element={
-              <div className="min-h-screen bg-gray-100">
-                <Header />
-                <ProductDetail />
-                <Footer />
-                <WhatsAppButton />
-                <Cart />
-              </div>
-            } />
+    <Router>
+      <AnalyticsWrapper>
+        <Routes>
+          {/* Rutas públicas */}
+          <Route path="/" element={
+            <div className="min-h-screen bg-gray-100">
+              <Header />
+              <main>
+                <Banner />
+                <MainOptions />
+                <Benefits />
+                <Testimonials />
+                <FAQ />
+                <ContactForm />
+              </main>
+              <Footer />
+              <WhatsAppButton />
+            </div>
+          } />
+          <Route path="/catalogo" element={
+            <div className="min-h-screen bg-gray-100">
+              <Header />
+              <Catalog />
+              <Footer />
+              <WhatsAppButton />
+            </div>
+          } />
+          <Route path="/producto/:code" element={
+            <div className="min-h-screen bg-gray-100">
+              <Header />
+              <ProductDetail />
+              <Footer />
+              <WhatsAppButton />
+            </div>
+          } />
 
-            {/* Rutas de administración */}
-            <Route path="/admin" element={<Login />} />
-            <Route path="/admin/dashboard" element={<Dashboard />} />
-            <Route path="/admin/products" element={<Products />} />
-            <Route path="/admin/categories" element={<Categories />} />
-            <Route path="/admin/banner" element={<BannerManagement />} />
-            <Route path="/admin/subscriptions" element={<Subscriptions />} />
-            <Route path="/admin/popup" element={<PopupManagement />} />
-            <Route path="/admin/orders" element={<Orders />} />
-          </Routes>
-        </AnalyticsWrapper>
-      </Router>
-    </CartProvider>
+          {/* Rutas de administración */}
+          <Route path="/admin" element={<Login />} />
+          <Route path="/admin/dashboard" element={<Dashboard />} />
+          <Route path="/admin/products" element={<Products />} />
+          <Route path="/admin/categories" element={<Categories />} />
+          <Route path="/admin/banner" element={<BannerManagement />} />
+          <Route path="/admin/subscriptions" element={<Subscriptions />} />
+          <Route path="/admin/popup" element={<PopupManagement />} />
+          <Route path="/admin/orders" element={<Orders />} />
+        </Routes>
+      </AnalyticsWrapper>
+    </Router>
   );
 }
 
