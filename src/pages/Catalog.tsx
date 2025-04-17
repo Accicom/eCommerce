@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MessageCircle, Search, Truck } from 'lucide-react';
+import { MessageCircle, Search, Truck, ShoppingBag, Send, MessageSquare } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAnalytics } from '../hooks/useAnalytics';
@@ -9,6 +9,49 @@ import NewsletterPopup from '../components/NewsletterPopup';
 
 type Product = Database['public']['Tables']['products']['Row'];
 type Category = Database['public']['Tables']['categories']['Row'];
+
+const CatalogInstructions = () => (
+  <div className="container mx-auto px-4 py-2">
+    <div className="bg-white shadow-lg rounded-xl overflow-hidden">
+      <div className="bg-gradient-to-r from-blue-600 to-blue-800 px-4 py-2">
+        <h2 className="text-base md:text-lg font-medium text-white/90 text-center">
+          Proceso de compra simple y rápido
+        </h2>
+      </div>
+      <div className="p-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-4">
+          <div className="flex flex-col items-center text-center">
+            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-3">
+              <ShoppingBag className="w-6 h-6 text-blue-600" />
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm font-medium">1</span>
+              <h3 className="font-medium text-gray-900">Explora el catálogo</h3>
+            </div>
+          </div>
+          <div className="flex flex-col items-center text-center">
+            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-3">
+              <Send className="w-6 h-6 text-blue-600" />
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm font-medium">2</span>
+              <h3 className="font-medium text-gray-900">Presiona "Me interesa"</h3>
+            </div>
+          </div>
+          <div className="flex flex-col items-center text-center">
+            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-3">
+              <MessageSquare className="w-6 h-6 text-blue-600" />
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm font-medium">3</span>
+              <h3 className="font-medium text-gray-900">Finaliza con un asesor</h3>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
 
 export default function Catalog() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -176,6 +219,10 @@ export default function Catalog() {
   return (
     <div className="min-h-screen bg-gray-100 pt-20">
       <NewsletterPopup />
+
+      {/* Instructions Banner */}
+      <CatalogInstructions />
+
       {/* Search Bar */}
       <div className="container mx-auto px-4 py-6">
         <div className="relative">
