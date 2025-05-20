@@ -13,6 +13,11 @@ type Order = {
   status: string;
   created_at: string;
   whatsapp_message: string;
+  client_id: string | null;
+  client?: {
+    name: string;
+    dni: string;
+  };
 };
 
 export default function Orders() {
@@ -37,7 +42,13 @@ export default function Orders() {
     try {
       const { data, error } = await supabase
         .from('completed_orders')
-        .select('*')
+        .select(`
+          *,
+          client:client_id (
+            name,
+            dni
+          )
+        `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -51,13 +62,17 @@ export default function Orders() {
 
   const filteredOrders = orders.filter(order =>
     order.order_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (order.user_email?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+    (order.user_email?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (order.client?.name.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (order.client?.dni || '').includes(searchTerm)
   );
 
   const downloadCSV = () => {
-    const headers = ['Número de Orden', 'Email', 'Productos', 'Total', 'Fecha'];
+    const headers = ['Número de Orden', 'Cliente', 'DNI', 'Email', 'Productos', 'Total', 'Fecha'];
     const csvData = filteredOrders.map(order => [
       order.order_number,
+      order.client?.name || 'N/A',
+      order.client?.dni || 'N/A',
       order.user_email || 'N/A',
       order.order_data.map(item => `${item.product_name} (x${item.quantity})`).join('; '),
       formatPrice(order.total_amount),
@@ -107,7 +122,7 @@ export default function Orders() {
             <div className="relative flex-1">
               <input
                 type="text"
-                placeholder="Buscar por número de orden..."
+                placeholder="Buscar por número de orden, cliente o DNI..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -135,6 +150,12 @@ export default function Orders() {
                       Número de Orden
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Cliente
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      DNI
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Email
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -155,6 +176,12 @@ export default function Orders() {
                         <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
                           {order.order_number}
                         </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {order.client?.name || 'No disponible'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {order.client?.dni || 'No disponible'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {order.user_email || 'No disponible'}

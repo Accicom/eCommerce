@@ -62,6 +62,7 @@ export default function Catalog() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [hasAccess, setHasAccess] = useState(false);
+  const [clientData, setClientData] = useState<any>(null);
   const { trackEvent } = useAnalytics();
 
   useEffect(() => {
@@ -127,7 +128,8 @@ export default function Catalog() {
           price: product.price
         }],
         total_amount: product.price,
-        whatsapp_message: message
+        whatsapp_message: message,
+        client_id: clientData?.id || null
       };
 
       const { error } = await supabase
@@ -160,9 +162,10 @@ export default function Catalog() {
     }
   };
 
-  const handleCatalogAccess = (clientData: any) => {
+  const handleCatalogAccess = (data: any) => {
     setHasAccess(true);
-    trackEvent('catalog_access', 'authentication', clientData.name);
+    setClientData(data);
+    trackEvent('catalog_access', 'authentication', data.name);
   };
 
   const ProductCard = ({ product, isFeatured = false }: { product: Product, isFeatured?: boolean }) => (

@@ -12,11 +12,16 @@ export default function ProductDetail() {
   const { code } = useParams();
   const [product, setProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [clientData, setClientData] = useState<any>(null);
   const { trackEvent } = useAnalytics();
 
   useEffect(() => {
     window.scrollTo(0, 0);
     fetchProduct();
+    const savedClient = localStorage.getItem('catalog_client');
+    if (savedClient) {
+      setClientData(JSON.parse(savedClient));
+    }
   }, [code]);
 
   const fetchProduct = async () => {
@@ -58,7 +63,8 @@ export default function ProductDetail() {
           price: product.price
         }],
         total_amount: product.price,
-        whatsapp_message: message
+        whatsapp_message: message,
+        client_id: clientData?.id || null
       };
 
       const { error } = await supabase
@@ -155,7 +161,7 @@ export default function ProductDetail() {
                 className="w-full bg-green-600 text-white px-6 py-3 rounded-lg
                 hover:bg-green-700 transition-colors flex items-center justify-center"
               >
-                <MessageCircle className="w-5 h-5 mr-2" />
+                <MessageCircle className="w-5 w-5 mr-2" />
                 Me interesa
               </button>
             </div>
