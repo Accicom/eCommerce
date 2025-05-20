@@ -111,6 +111,67 @@ export interface Database {
           updated_at?: string
         }
       }
+      catalog_clients: {
+        Row: {
+          id: string
+          name: string
+          dni: string
+          cuit?: string
+          celular?: string
+          email?: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          dni: string
+          cuit?: string
+          celular?: string
+          email?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          dni?: string
+          cuit?: string
+          celular?: string
+          email?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      catalog_leads: {
+        Row: {
+          id: string
+          dni?: string
+          email: string
+          status: string
+          created_at: string
+          updated_at: string
+          last_attempt: string
+        }
+        Insert: {
+          id?: string
+          dni?: string
+          email: string
+          status?: string
+          created_at?: string
+          updated_at?: string
+          last_attempt?: string
+        }
+        Update: {
+          id?: string
+          dni?: string
+          email?: string
+          status?: string
+          created_at?: string
+          updated_at?: string
+          last_attempt?: string
+        }
+      }
     }
   }
 }

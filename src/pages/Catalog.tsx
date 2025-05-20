@@ -6,6 +6,7 @@ import { useAnalytics } from '../hooks/useAnalytics';
 import { formatPrice } from '../utils/formatters';
 import type { Database } from '../lib/database.types';
 import NewsletterPopup from '../components/NewsletterPopup';
+import CatalogGate from '../components/CatalogGate';
 
 type Product = Database['public']['Tables']['products']['Row'];
 type Category = Database['public']['Tables']['categories']['Row'];
@@ -60,12 +61,15 @@ export default function Catalog() {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [hasAccess, setHasAccess] = useState(false);
   const { trackEvent } = useAnalytics();
 
   useEffect(() => {
-    fetchProducts();
-    fetchCategories();
-  }, []);
+    if (hasAccess) {
+      fetchProducts();
+      fetchCategories();
+    }
+  }, [hasAccess]);
 
   const fetchCategories = async () => {
     try {
@@ -156,6 +160,11 @@ export default function Catalog() {
     }
   };
 
+  const handleCatalogAccess = (clientData: any) => {
+    setHasAccess(true);
+    trackEvent('catalog_access', 'authentication', clientData.name);
+  };
+
   const ProductCard = ({ product, isFeatured = false }: { product: Product, isFeatured?: boolean }) => (
     <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
       <Link to={`/producto/${product.code}`} className="block">
@@ -205,6 +214,10 @@ export default function Catalog() {
       </div>
     </div>
   );
+
+  if (!hasAccess) {
+    return <CatalogGate onAccess={handleCatalogAccess} />;
+  }
 
   if (isLoading) {
     return (

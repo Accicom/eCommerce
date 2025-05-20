@@ -19,6 +19,7 @@ import BannerManagement from './pages/admin/Banner';
 import Subscriptions from './pages/admin/Subscriptions';
 import PopupManagement from './pages/admin/PopupManagement';
 import Orders from './pages/admin/Orders';
+import CatalogClients from './pages/admin/CatalogClients';
 import { useAnalytics } from './hooks/useAnalytics';
 
 // Analytics wrapper component
@@ -74,6 +75,7 @@ function App() {
           <Route path="/admin/subscriptions" element={<Subscriptions />} />
           <Route path="/admin/popup" element={<PopupManagement />} />
           <Route path="/admin/orders" element={<Orders />} />
+          <Route path="/admin/catalog-clients" element={<CatalogClients />} />
         </Routes>
       </AnalyticsWrapper>
     </Router>
