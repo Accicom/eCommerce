@@ -14,6 +14,7 @@ export default function CatalogGate({ onAccess }: CatalogGateProps) {
   const [loading, setLoading] = useState(false);
   const [clientData, setClientData] = useState<any>(null);
   const [products, setProducts] = useState<any[]>([]);
+  const [isLeadSubmitted, setIsLeadSubmitted] = useState(false);
 
   useEffect(() => {
     // Check if user was previously authenticated
@@ -103,6 +104,7 @@ export default function CatalogGate({ onAccess }: CatalogGateProps) {
     e.preventDefault();
     setError('');
     setLoading(true);
+    setIsLeadSubmitted(false);
 
     try {
       // Check if email already exists in leads
@@ -127,8 +129,7 @@ export default function CatalogGate({ onAccess }: CatalogGateProps) {
 
       if (leadError) throw leadError;
 
-      // Show success message and WhatsApp button
-      setStep('lead');
+      setIsLeadSubmitted(true);
     } catch (error) {
       console.error('Error saving lead:', error);
       setError('Error al guardar sus datos. Por favor, intente nuevamente.');
@@ -209,7 +210,11 @@ export default function CatalogGate({ onAccess }: CatalogGateProps) {
               </button>
 
               <button
-                onClick={() => setStep('initial')}
+                onClick={() => {
+                  setStep('initial');
+                  setDni('');
+                  setClientData(null);
+                }}
                 className="w-full bg-gray-100 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-200 transition-colors"
               >
                 No soy yo
@@ -222,7 +227,7 @@ export default function CatalogGate({ onAccess }: CatalogGateProps) {
 
     return (
       <div className="max-w-md w-full bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-8">
-        {!error ? (
+        {!error && !isLeadSubmitted ? (
           <div className="text-center">
             <h2 className="text-2xl font-bold text-gray-800 mb-4">
               ¡Gracias por tu interés!
@@ -257,21 +262,8 @@ export default function CatalogGate({ onAccess }: CatalogGateProps) {
                 {loading ? 'Enviando...' : 'Enviar'}
               </button>
             </form>
-
-            <div className="mt-8">
-              <p className="text-gray-600 mb-4">
-                ¿Necesitas acceso inmediato? Contáctanos por WhatsApp
-              </p>
-              <button
-                onClick={handleWhatsAppClick}
-                className="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center"
-              >
-                <MessageCircle className="w-5 h-5 mr-2" />
-                Contactar por WhatsApp
-              </button>
-            </div>
           </div>
-        ) : (
+        ) : error ? (
           <div className="text-center">
             <h2 className="text-2xl font-bold text-gray-800 mb-4">
               {error}
@@ -279,6 +271,22 @@ export default function CatalogGate({ onAccess }: CatalogGateProps) {
             <button
               onClick={handleWhatsAppClick}
               className="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center mt-8"
+            >
+              <MessageCircle className="w-5 h-5 mr-2" />
+              Contactar por WhatsApp
+            </button>
+          </div>
+        ) : (
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">
+              ¡Gracias por registrarte!
+            </h2>
+            <p className="text-gray-600 mb-8">
+              Pronto podrás acceder a nuestro catálogo. ¿Necesitas acceso inmediato? Contáctanos por WhatsApp
+            </p>
+            <button
+              onClick={handleWhatsAppClick}
+              className="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center"
             >
               <MessageCircle className="w-5 h-5 mr-2" />
               Contactar por WhatsApp
