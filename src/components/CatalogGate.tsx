@@ -9,7 +9,6 @@ type CatalogGateProps = {
 export default function CatalogGate({ onAccess }: CatalogGateProps) {
   const [step, setStep] = useState<'initial' | 'verify' | 'lead'>('initial');
   const [dni, setDni] = useState('');
-  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -93,15 +92,10 @@ export default function CatalogGate({ onAccess }: CatalogGateProps) {
     }
   };
 
-  const handleVerifyName = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-
-    if (clientData && name.toLowerCase() === clientData.name.toLowerCase()) {
+  const handleContinueAsClient = () => {
+    if (clientData) {
       localStorage.setItem('catalog_client', JSON.stringify(clientData));
       onAccess(clientData);
-    } else {
-      setError('El nombre no coincide con nuestros registros.');
     }
   };
 
@@ -199,48 +193,29 @@ export default function CatalogGate({ onAccess }: CatalogGateProps) {
       return (
         <div className="max-w-md w-full bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-8">
           <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">
               Verificar Identidad
             </h2>
-            <p className="text-gray-600">
-              Por favor, ingresa tu nombre como figura en nuestros registros
+            <p className="text-gray-600 mb-6">
+              ¿Eres {clientData?.name}?
             </p>
-          </div>
 
-          <form onSubmit={handleVerifyName} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nombre Completo
-              </label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Ingresa tu nombre"
-                required
-              />
+            <div className="space-y-4">
+              <button
+                onClick={handleContinueAsClient}
+                className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Continuar como {clientData?.name}
+              </button>
+
+              <button
+                onClick={() => setStep('initial')}
+                className="w-full bg-gray-100 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                No soy yo
+              </button>
             </div>
-
-            {error && (
-              <p className="text-red-600 text-sm">{error}</p>
-            )}
-
-            <button
-              type="submit"
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Verificar
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setStep('initial')}
-              className="w-full text-gray-600 py-2 px-4 rounded-lg hover:text-gray-800 transition-colors"
-            >
-              Volver
-            </button>
-          </form>
+          </div>
         </div>
       );
     }
