@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MessageCircle, Search, Truck, ShoppingBag, Send, MessageSquare } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import ReactPaginate from 'react-paginate';
 import { supabase } from '../lib/supabase';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { formatPrice } from '../utils/formatters';
@@ -63,7 +64,10 @@ export default function Catalog() {
   const [isLoading, setIsLoading] = useState(true);
   const [hasAccess, setHasAccess] = useState(false);
   const [clientData, setClientData] = useState<any>(null);
+  const [currentPage, setCurrentPage] = useState(0);
   const { trackEvent } = useAnalytics();
+
+  const productsPerPage = 12;
 
   useEffect(() => {
     if (hasAccess) {
@@ -71,6 +75,11 @@ export default function Catalog() {
       fetchCategories();
     }
   }, [hasAccess]);
+
+  useEffect(() => {
+    // Reset to first page when filters change
+    setCurrentPage(0);
+  }, [searchTerm, selectedCategory]);
 
   const fetchCategories = async () => {
     try {
@@ -112,6 +121,10 @@ export default function Catalog() {
     const matchesCategory = selectedCategory ? product.category === selectedCategory : true;
     return matchesSearch && matchesCategory;
   });
+
+  const pageCount = Math.ceil(filteredProducts.length / productsPerPage);
+  const offset = currentPage * productsPerPage;
+  const currentPageProducts = filteredProducts.slice(offset, offset + productsPerPage);
 
   const handleWhatsAppClick = async (product: Product) => {
     const message = `¡Hola! Me interesa el siguiente producto:\n\n${product.name}\nCódigo: ${product.code}\nPrecio: $${formatPrice(Number(product.price))}`;
@@ -166,6 +179,11 @@ export default function Catalog() {
     setHasAccess(true);
     setClientData(data);
     trackEvent('catalog_access', 'authentication', data.name);
+  };
+
+  const handlePageChange = ({ selected }: { selected: number }) => {
+    setCurrentPage(selected);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const ProductCard = ({ product, isFeatured = false }: { product: Product, isFeatured?: boolean }) => (
@@ -296,10 +314,31 @@ export default function Catalog() {
       {/* Products Grid */}
       <div className="container mx-auto px-4 py-8">
         <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {filteredProducts.map(product => (
+          {currentPageProducts.map(product => (
             <ProductCard key={product.id} product={product} />
           ))}
         </div>
+
+        {/* Pagination */}
+        {filteredProducts.length > productsPerPage && (
+          <div className="mt-8">
+            <ReactPaginate
+              previousLabel="Anterior"
+              nextLabel="Siguiente"
+              pageCount={pageCount}
+              onPageChange={handlePageChange}
+              forcePage={currentPage}
+              containerClassName="flex items-center justify-center gap-2"
+              pageClassName="px-3 py-2 rounded-lg border hover:bg-gray-50 transition-colors"
+              activeClassName="!bg-blue-600 !text-white !border-blue-600"
+              previousClassName="px-3 py-2 rounded-lg border hover:bg-gray-50 transition-colors"
+              nextClassName="px-3 py-2 rounded-lg border hover:bg-gray-50 transition-colors"
+              disabledClassName="opacity-50 cursor-not-allowed hover:bg-transparent"
+              breakLabel="..."
+              breakClassName="px-3 py-2"
+            />
+          </div>
+        )}
       </div>
     </div>
   );
