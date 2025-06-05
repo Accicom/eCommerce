@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Package, Image, LogOut, Tag, Mail, MessageSquare, ShoppingCart, Users } from 'lucide-react';
+import { Package, Image, LogOut, Tag, Mail, MessageSquare, ShoppingCart, Users, MapPin } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 export default function Dashboard() {
@@ -153,6 +153,21 @@ export default function Dashboard() {
             </div>
             <p className="text-gray-600">
               Gestiona los clientes con acceso al catálogo y leads interesados.
+            </p>
+          </div>
+
+          <div
+            onClick={() => navigate('/admin/branches')}
+            className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer"
+          >
+            <div className="flex items-center mb-4">
+              <MapPin className="h-8 w-8 text-blue-600" />
+              <h2 className="text-xl font-semibold text-gray-800 ml-3">
+                Gestión de Sucursales
+              </h2>
+            </div>
+            <p className="text-gray-600">
+              Administra la información y ubicación de las sucursales.
             </p>
           </div>
         </div>

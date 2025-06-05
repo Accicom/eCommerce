@@ -6,6 +6,7 @@ import MainOptions from './components/MainOptions';
 import Benefits from './components/Benefits';
 import Testimonials from './components/Testimonials';
 import FAQ from './components/FAQ';
+import Branches from './components/Branches';
 import ContactForm from './components/ContactForm';
 import Footer from './components/Footer';
 import WhatsAppButton from './components/WhatsAppButton';
@@ -20,6 +21,7 @@ import Subscriptions from './pages/admin/Subscriptions';
 import PopupManagement from './pages/admin/PopupManagement';
 import Orders from './pages/admin/Orders';
 import CatalogClients from './pages/admin/CatalogClients';
+import BranchesManagement from './pages/admin/Branches';
 import { useAnalytics } from './hooks/useAnalytics';
 
 // Analytics wrapper component
@@ -43,6 +45,7 @@ function App() {
                 <Benefits />
                 <Testimonials />
                 <FAQ />
+                <Branches />
                 <ContactForm />
               </main>
               <Footer />
@@ -76,6 +79,7 @@ function App() {
           <Route path="/admin/popup" element={<PopupManagement />} />
           <Route path="/admin/orders" element={<Orders />} />
           <Route path="/admin/catalog-clients" element={<CatalogClients />} />
+          <Route path="/admin/branches" element={<BranchesManagement />} />
         </Routes>
       </AnalyticsWrapper>
     </Router>
