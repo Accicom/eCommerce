@@ -126,6 +126,7 @@ export default function CatalogClients() {
       email: lead.email,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
+      last_seen: new Date().toISOString(),
     });
     setIsModalOpen(true);
   };
@@ -223,7 +224,7 @@ export default function CatalogClients() {
   const downloadCSV = () => {
     const data = activeTab === 'clients' ? clients : leads;
     const headers = activeTab === 'clients' 
-      ? ['Nombre', 'DNI', 'CUIT', 'Celular', 'Email', 'Fecha de registro']
+      ? ['Nombre', 'DNI', 'CUIT', 'Celular', 'Email', 'Última vez visto', 'Fecha de registro']
       : ['DNI', 'Email', 'Estado', 'Último intento', 'Fecha de registro'];
 
     const csvData = data.map(item => {
@@ -235,6 +236,7 @@ export default function CatalogClients() {
           client.cuit || '',
           client.celular || '',
           client.email || '',
+          new Date(client.last_seen).toLocaleDateString(),
           new Date(client.created_at).toLocaleDateString()
         ];
       } else {
@@ -392,6 +394,9 @@ export default function CatalogClients() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Email
                     </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Última vez visto
+                    </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Acciones
                     </th>
@@ -421,6 +426,11 @@ export default function CatalogClients() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-500">
                           {client.email || '-'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">
+                          {new Date(client.last_seen).toLocaleDateString()}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

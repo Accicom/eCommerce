@@ -22,6 +22,7 @@ export default function CatalogGate({ onAccess }: CatalogGateProps) {
     if (savedClient) {
       const client = JSON.parse(savedClient);
       setClientData(client);
+      updateLastSeen(client.id);
       onAccess(client);
     }
 
@@ -40,6 +41,19 @@ export default function CatalogGate({ onAccess }: CatalogGateProps) {
       if (data) setProducts(data);
     } catch (error) {
       console.error('Error fetching products:', error);
+    }
+  };
+
+  const updateLastSeen = async (clientId: string) => {
+    try {
+      const { error } = await supabase
+        .from('catalog_clients')
+        .update({ last_seen: new Date().toISOString() })
+        .eq('id', clientId);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error updating last seen:', error);
     }
   };
 
@@ -93,8 +107,9 @@ export default function CatalogGate({ onAccess }: CatalogGateProps) {
     }
   };
 
-  const handleContinueAsClient = () => {
+  const handleContinueAsClient = async () => {
     if (clientData) {
+      await updateLastSeen(clientData.id);
       localStorage.setItem('catalog_client', JSON.stringify(clientData));
       onAccess(clientData);
     }
