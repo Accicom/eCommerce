@@ -78,26 +78,8 @@ export default function CatalogGate({ onAccess }: CatalogGateProps) {
         setClientData(client);
         setStep('verify');
       } else {
-        // Check if DNI exists in leads
-        const { data: lead, error: leadError } = await supabase
-          .from('catalog_leads')
-          .select('*')
-          .eq('dni', dni)
-          .single();
-
-        if (leadError && leadError.code !== 'PGRST116') {
-          throw leadError;
-        }
-
-        if (lead) {
-          if (lead.status === 'rejected') {
-            setError('Lo sentimos, tu solicitud no ha sido aprobada. Por favor, contacta con nosotros para más información.');
-          } else {
-            setStep('lead');
-          }
-        } else {
-          setStep('lead');
-        }
+        // DNI not found, go to email collection step
+        setStep('lead');
       }
     } catch (error) {
       console.error('Error checking DNI:', error);
@@ -119,35 +101,52 @@ export default function CatalogGate({ onAccess }: CatalogGateProps) {
     e.preventDefault();
     setError('');
     setLoading(true);
-    setIsLeadSubmitted(false);
 
     try {
-      // Check if email already exists in leads
-      const { data: existingLead, error: checkError } = await supabase
-        .from('catalog_leads')
-        .select('*')
-        .eq('email', email)
+      // Create client directly with DNI and email
+      const { data: newClient, error: clientError } = await supabase
+        .from('catalog_clients')
+        .insert([{ 
+          dni, 
+          email,
+          name: null // Explicitly set name as null
+        }])
+        .select()
         .single();
 
-      if (checkError && checkError.code !== 'PGRST116') {
-        throw checkError;
-      }
+      if (clientError) throw clientError;
 
-      if (existingLead) {
-        setError('Este email ya está registrado como interesado.');
-        return;
-      }
-
+      // Also create a lead record for tracking
       const { error: leadError } = await supabase
         .from('catalog_leads')
-        .insert([{ dni, email }]);
+        .insert([{ 
+          dni, 
+          email,
+          status: 'approved' // Automatically approved
+        }]);
 
       if (leadError) throw leadError;
 
-      setIsLeadSubmitted(true);
+      // Set client data and grant access immediately
+      setClientData(newClient);
+      await updateLastSeen(newClient.id);
+      localStorage.setItem('catalog_client', JSON.stringify(newClient));
+      onAccess(newClient);
+      
     } catch (error) {
       console.error('Error saving lead:', error);
-      setError('Error al guardar sus datos. Por favor, intente nuevamente.');
+      if (error.code === '23505') {
+        // Duplicate key error - DNI or email already exists
+        if (error.message.includes('dni')) {
+          setError('Este DNI ya está registrado en el sistema.');
+        } else if (error.message.includes('email')) {
+          setError('Este email ya está registrado en el sistema.');
+        } else {
+          setError('Los datos ya están registrados en el sistema.');
+        }
+      } else {
+        setError('Error al procesar sus datos. Por favor, intente nuevamente.');
+      }
     } finally {
       setLoading(false);
     }
@@ -213,7 +212,7 @@ export default function CatalogGate({ onAccess }: CatalogGateProps) {
               Verificar Identidad
             </h2>
             <p className="text-gray-600 mb-6">
-              ¿Eres {clientData?.name}?
+              ¿Es correcto tu DNI {clientData?.dni}?
             </p>
 
             <div className="space-y-4">
@@ -221,7 +220,7 @@ export default function CatalogGate({ onAccess }: CatalogGateProps) {
                 onClick={handleContinueAsClient}
                 className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors"
               >
-                Continuar como {clientData?.name}
+                Sí, continuar
               </button>
 
               <button
@@ -232,7 +231,7 @@ export default function CatalogGate({ onAccess }: CatalogGateProps) {
                 }}
                 className="w-full bg-gray-100 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-200 transition-colors"
               >
-                No soy yo
+                No, corregir DNI
               </button>
             </div>
           </div>
@@ -242,72 +241,47 @@ export default function CatalogGate({ onAccess }: CatalogGateProps) {
 
     return (
       <div className="max-w-md w-full bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-8">
-        {!error && !isLeadSubmitted ? (
-          <div className="text-center">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">
-              ¡Gracias por tu interés!
-            </h2>
-            <p className="text-gray-600 mb-8">
-              Pronto podrás acceder a nuestro catálogo. Mientras tanto, ¿te gustaría recibir más información?
-            </p>
-            <form onSubmit={handleLeadSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Correo Electrónico
-                </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="tu@email.com"
-                  required
-                />
-              </div>
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">
+            Completa tu registro
+          </h2>
+          <p className="text-gray-600 mb-8">
+            Para acceder al catálogo, necesitamos tu correo electrónico
+          </p>
+          <form onSubmit={handleLeadSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Correo Electrónico
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="tu@email.com"
+                required
+              />
+            </div>
 
-              {error && (
-                <p className="text-red-600 text-sm">{error}</p>
-              )}
+            {error && (
+              <p className="text-red-600 text-sm">{error}</p>
+            )}
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-              >
-                {loading ? 'Enviando...' : 'Enviar'}
-              </button>
-            </form>
-          </div>
-        ) : error ? (
-          <div className="text-center">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">
-              {error}
-            </h2>
             <button
-              onClick={handleWhatsAppClick}
-              className="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center mt-8"
+              type="submit"
+              disabled={loading}
+              className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
             >
-              <MessageCircle className="w-5 h-5 mr-2" />
-              Contactar por WhatsApp
+              {loading ? 'Procesando...' : 'Acceder al Catálogo'}
             </button>
-          </div>
-        ) : (
+          </form>
+          
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">
-              ¡Gracias por registrarte!
-            </h2>
-            <p className="text-gray-600 mb-8">
-              Pronto podrás acceder a nuestro catálogo. ¿Necesitas acceso inmediato? Contáctanos por WhatsApp
+            <p className="text-xs text-gray-500 mt-4">
+              Al registrarte, tendrás acceso inmediato al catálogo completo
             </p>
-            <button
-              onClick={handleWhatsAppClick}
-              className="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center"
-            >
-              <MessageCircle className="w-5 h-5 mr-2" />
-              Contactar por WhatsApp
-            </button>
           </div>
-        )}
+        </div>
       </div>
     );
   };

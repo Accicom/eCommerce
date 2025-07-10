@@ -114,7 +114,7 @@ export interface Database {
       catalog_clients: {
         Row: {
           id: string
-          name: string
+          name: string | null
           dni: string
           cuit?: string
           celular?: string
@@ -124,7 +124,7 @@ export interface Database {
         }
         Insert: {
           id?: string
-          name: string
+          name?: string | null
           dni: string
           cuit?: string
           celular?: string
@@ -134,7 +134,7 @@ export interface Database {
         }
         Update: {
           id?: string
-          name?: string
+          name?: string | null
           dni?: string
           cuit?: string
           celular?: string

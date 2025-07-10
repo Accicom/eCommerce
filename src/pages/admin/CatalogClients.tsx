@@ -126,7 +126,8 @@ export default function CatalogClients() {
       email: lead.email,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      last_seen: new Date().toISOString(),
+      // Don't set last_seen - it will be set when the client actually accesses the catalog
+      last_seen: null,
     });
     setIsModalOpen(true);
   };
@@ -236,7 +237,7 @@ export default function CatalogClients() {
           client.cuit || '',
           client.celular || '',
           client.email || '',
-          new Date(client.last_seen).toLocaleDateString(),
+          client.last_seen ? new Date(client.last_seen).toLocaleDateString() : 'Nunca',
           new Date(client.created_at).toLocaleDateString()
         ];
       } else {
@@ -267,7 +268,7 @@ export default function CatalogClients() {
   };
 
   const filteredClients = clients.filter(client =>
-    client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (client.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     client.dni.includes(searchTerm) ||
     (client.email?.toLowerCase() || '').includes(searchTerm.toLowerCase())
   );
@@ -407,7 +408,7 @@ export default function CatalogClients() {
                     <tr key={client.id}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">
-                          {client.name}
+                          {client.name || 'Sin nombre'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -430,7 +431,7 @@ export default function CatalogClients() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-500">
-                          {new Date(client.last_seen).toLocaleDateString()}
+                          {client.last_seen ? new Date(client.last_seen).toLocaleDateString() : 'Nunca'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
