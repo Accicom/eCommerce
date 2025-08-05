@@ -9,7 +9,7 @@ type CatalogGateProps = {
 export default function CatalogGate({ onAccess }: CatalogGateProps) {
   const [step, setStep] = useState<'initial' | 'verify' | 'lead'>('initial');
   const [dni, setDni] = useState('');
-  const [email, setEmail] = useState('');
+  const [celular, setCelular] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [clientData, setClientData] = useState<any>(null);
@@ -108,7 +108,7 @@ export default function CatalogGate({ onAccess }: CatalogGateProps) {
         .from('catalog_clients')
         .insert([{ 
           dni, 
-          email,
+          celular,
           name: null // Explicitly set name as null
         }])
         .select()
@@ -121,7 +121,7 @@ export default function CatalogGate({ onAccess }: CatalogGateProps) {
         .from('catalog_leads')
         .insert([{ 
           dni, 
-          email,
+          email: `${celular}@temp.com`, // Temporary email for compatibility
           status: 'approved' // Automatically approved
         }]);
 
@@ -139,8 +139,8 @@ export default function CatalogGate({ onAccess }: CatalogGateProps) {
         // Duplicate key error - DNI or email already exists
         if (error.message.includes('dni')) {
           setError('Este DNI ya está registrado en el sistema.');
-        } else if (error.message.includes('email')) {
-          setError('Este email ya está registrado en el sistema.');
+        } else if (error.message.includes('celular')) {
+          setError('Este número de celular ya está registrado en el sistema.');
         } else {
           setError('Los datos ya están registrados en el sistema.');
         }
@@ -246,21 +246,25 @@ export default function CatalogGate({ onAccess }: CatalogGateProps) {
             Completa tu registro
           </h2>
           <p className="text-gray-600 mb-8">
-            Para acceder al catálogo, necesitamos tu correo electrónico
+            Para acceder al catálogo, necesitamos tu número de celular
           </p>
           <form onSubmit={handleLeadSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Correo Electrónico
+                Número de Celular
               </label>
               <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                type="tel"
+                value={celular}
+                onChange={(e) => setCelular(e.target.value.replace(/\D/g, ''))}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="tu@email.com"
+                placeholder="11 1234 5678"
+                maxLength={10}
                 required
               />
+              <p className="mt-1 text-xs text-gray-500">
+                Ingresa tu número sin el código de país (ej: 1123456789)
+              </p>
             </div>
 
             {error && (

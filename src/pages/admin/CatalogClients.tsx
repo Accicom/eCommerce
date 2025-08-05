@@ -225,7 +225,7 @@ export default function CatalogClients() {
   const downloadCSV = () => {
     const data = activeTab === 'clients' ? clients : leads;
     const headers = activeTab === 'clients' 
-      ? ['Nombre', 'DNI', 'CUIT', 'Celular', 'Email', 'Última vez visto', 'Fecha de registro']
+      ? ['Nombre', 'DNI', 'CUIT', 'Celular', 'Última vez visto', 'Fecha de registro']
       : ['DNI', 'Email', 'Estado', 'Último intento', 'Fecha de registro'];
 
     const csvData = data.map(item => {
@@ -236,7 +236,6 @@ export default function CatalogClients() {
           client.dni,
           client.cuit || '',
           client.celular || '',
-          client.email || '',
           client.last_seen ? new Date(client.last_seen).toLocaleDateString() : 'Nunca',
           new Date(client.created_at).toLocaleDateString()
         ];
@@ -270,7 +269,7 @@ export default function CatalogClients() {
   const filteredClients = clients.filter(client =>
     (client.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     client.dni.includes(searchTerm) ||
-    (client.email?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+    (client.celular || '').includes(searchTerm)
   );
 
   const filteredLeads = leads.filter(lead =>
@@ -338,7 +337,7 @@ export default function CatalogClients() {
             <div className="relative flex-1">
               <input
                 type="text"
-                placeholder="Buscar por nombre, DNI o email..."
+                placeholder="Buscar por nombre, DNI o celular..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -393,9 +392,6 @@ export default function CatalogClients() {
                       Celular
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Email
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Última vez visto
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -422,11 +418,6 @@ export default function CatalogClients() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-500">
                           {client.celular || '-'}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">
-                          {client.email || '-'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -590,20 +581,9 @@ export default function CatalogClients() {
                     </label>
                     <input
                       name="celular"
-                      type="text"
+                      type="tel"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                       defaultValue={currentClient?.celular}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Email
-                    </label>
-                    <input
-                      name="email"
-                      type="email"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                      defaultValue={currentClient?.email}
                     />
                   </div>
                   <div className="flex justify-end space-x-3 mt-6">
@@ -638,7 +618,6 @@ export default function CatalogClients() {
                         <li>dni (DNI - obligatorio, 7 u 8 dígitos)</li>
                         <li>cuit (CUIT - opcional, 11 dígitos)</li>
                         <li>celular (Celular - opcional)</li>
-                        <li>email (Email - opcional)</li>
                       </ul>
                     </li>
                     <li>Asegúrese de que los DNIs y CUITs no estén duplicados</li>
