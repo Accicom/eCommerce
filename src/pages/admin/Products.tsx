@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Edit2, Trash2, ArrowLeft, Star, Upload, FileSpreadsheet, Eye, EyeOff } from 'lucide-react';
+import { Plus, Edit2, Trash2, ArrowLeft, Star, Upload, FileSpreadsheet, Eye, EyeOff, Download } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { read, utils } from 'xlsx';
+import { read, utils, write } from 'xlsx';
 import type { Database } from '../../lib/database.types';
 
 type Product = Database['public']['Tables']['products']['Row'];
@@ -20,6 +20,8 @@ export default function Products() {
   const [importMode, setImportMode] = useState<ImportMode>('single');
   const [importErrors, setImportErrors] = useState<string[]>([]);
   const [isImporting, setIsImporting] = useState(false);
+  const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set());
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -214,6 +216,9 @@ export default function Products() {
           image: row.image.toString(),
           description: row.description?.toString() || '',
           featured: row.featured === true || row.featured === 'true',
+          brand: row.brand?.toString() || null,
+          supplier: row.supplier?.toString() || null,
+          visible: true,
         });
       }
 
@@ -242,9 +247,89 @@ export default function Products() {
     }
   };
 
+  const downloadProductsExcel = () => {
+    // Preparar los datos para Excel
+    const excelData = products.map(product => ({
+      'Código': product.code,
+      'Nombre': product.name,
+      'Precio': product.price,
+      'Categoría': product.category,
+      'Marca': product.brand || '',
+      'Proveedor': product.supplier || '',
+      'Descripción': product.description || '',
+      'Destacado': product.featured ? 'Sí' : 'No',
+      'Visible': product.visible ? 'Sí' : 'No',
+      'URL Imagen': product.image,
+      'Fecha Creación': new Date(product.created_at).toLocaleDateString()
+    }));
+
+    // Crear el libro de Excel
+    const worksheet = utils.json_to_sheet(excelData);
+    const workbook = utils.book_new();
+    utils.book_append_sheet(workbook, worksheet, 'Productos');
+
+    // Descargar el archivo
+    const excelBuffer = write(workbook, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `productos_${new Date().toISOString().split('T')[0]}.xlsx`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedProductIds(new Set(products.map(p => p.id)));
+    } else {
+      setSelectedProductIds(new Set());
+    }
+  };
+
+  const handleSelectProduct = (productId: string, checked: boolean) => {
+    const newSelected = new Set(selectedProductIds);
+    if (checked) {
+      newSelected.add(productId);
+    } else {
+      newSelected.delete(productId);
+    }
+    setSelectedProductIds(newSelected);
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedProductIds.size === 0) return;
+
+    const confirmMessage = `¿Estás seguro de que deseas eliminar ${selectedProductIds.size} producto${selectedProductIds.size > 1 ? 's' : ''}? Esta acción no se puede deshacer.`;
+    
+    if (!window.confirm(confirmMessage)) return;
+
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .in('id', Array.from(selectedProductIds));
+
+      if (error) throw error;
+
+      setSelectedProductIds(new Set());
+      fetchProducts();
+    } catch (error) {
+      console.error('Error deleting products:', error);
+      alert('Error al eliminar los productos. Por favor, intenta nuevamente.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const isAllSelected = products.length > 0 && selectedProductIds.size === products.length;
+  const isIndeterminate = selectedProductIds.size > 0 && selectedProductIds.size < products.length;
+
   return (
     <div className="min-h-screen bg-gray-100">
-      <div className="max-w-[97rem] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="w-full max-w-none mx-auto px-2 sm:px-4 lg:px-6 py-8">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
             <button
@@ -257,6 +342,23 @@ export default function Products() {
             <h1 className="text-2xl font-bold text-gray-800">Gestión de Productos</h1>
           </div>
           <div className="flex space-x-4">
+            <button
+              onClick={downloadProductsExcel}
+              className="flex items-center bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+            >
+              <Download className="h-5 w-5 mr-2" />
+              Descargar Excel
+            </button>
+            {selectedProductIds.size > 0 && (
+              <button
+                onClick={handleBulkDelete}
+                disabled={isDeleting}
+                className="flex items-center bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                <Trash2 className="h-5 w-5 mr-2" />
+                {isDeleting ? 'Eliminando...' : `Eliminar ${selectedProductIds.size}`}
+              </button>
+            )}
             <button
               onClick={() => {
                 setImportMode('single');
@@ -296,60 +398,89 @@ export default function Products() {
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
+            <div className="overflow-x-auto min-w-full">
+              <table className="w-full table-fixed divide-y divide-gray-200" style={{ minWidth: '1400px' }}>
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="w-12 px-3 py-3 text-left">
+                    <input
+                      type="checkbox"
+                      checked={isAllSelected}
+                      ref={(input) => {
+                        if (input) input.indeterminate = isIndeterminate;
+                      }}
+                      onChange={(e) => handleSelectAll(e.target.checked)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                  </th>
+                  <th className="w-80 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Producto
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="w-24 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Código
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="w-32 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Categoría
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="w-28 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Marca
+                  </th>
+                  <th className="w-24 px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Precio
                   </th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="w-20 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Destacado
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="w-20 px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Visible
+                  </th>
+                  <th className="w-24 px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Acciones
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {products.map((product) => (
-                  <tr key={product.id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                  <tr key={product.id} className={!product.visible ? 'bg-gray-50' : ''}>
+                    <td className="px-3 py-4 whitespace-nowrap">
+                      <input
+                        type="checkbox"
+                        checked={selectedProductIds.has(product.id)}
+                        onChange={(e) => handleSelectProduct(product.id, e.target.checked)}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                    </td>
+                    <td className="px-4 py-4">
                       <div className="flex items-center">
                         <img
                           src={product.image}
                           alt={product.name}
-                          className="h-10 w-10 rounded-lg object-cover"
+                          className="h-10 w-10 rounded-lg object-cover flex-shrink-0"
                         />
                         <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">
+                          <div className="text-sm font-medium text-gray-900 truncate">
                             {product.name}
                           </div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-500">
                         {product.code}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 py-4 whitespace-nowrap">
                       <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
                         {product.category}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500 truncate">
+                      {product.brand || '-'}
+                    </td>
+                    <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
                       ${product.price.toFixed(2)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                    <td className="px-2 py-4 whitespace-nowrap text-center">
                       <button
                         onClick={() => toggleFeatured(product)}
                         className={`${
@@ -359,8 +490,7 @@ export default function Products() {
                         <Star className="h-5 w-5 fill-current" />
                       </button>
                     </td>
-
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                    <td className="px-2 py-4 whitespace-nowrap text-center">
                       <button
                         onClick={() => toggleVisibility(product)}
                         className={`${
@@ -374,10 +504,8 @@ export default function Products() {
                           <EyeOff className="h-5 w-5" />
                         )}
                       </button>
-                    </td>    
-
-
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    </td>
+                    <td className="px-3 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button
                         onClick={() => {
                           setImportMode('single');
@@ -398,7 +526,8 @@ export default function Products() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+              </table>
+            </div>
           </div>
         )}
       </div>
