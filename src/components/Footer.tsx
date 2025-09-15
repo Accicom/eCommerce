@@ -107,7 +107,7 @@ export default function Footer() {
                   className="inline-block opacity-75 hover:opacity-100 transition-opacity"
                 >
                   <img 
-                    src="https://i.ibb.co/NPMdFWY/usuarios-financieros-2x.png"
+                    src="https://dixpiyqipjzzccdlapyh.supabase.co/storage/v1/object/public/bauldemarca/banner/usuarios_financieros.png"
                     alt="Usuarios Financieros BCRA"
                     className="w-auto h-16"
                   />
@@ -123,7 +123,7 @@ export default function Footer() {
                   className="inline-block opacity-75 hover:opacity-100 transition-opacity"
                 >
                   <img 
-                    src="https://i.ibb.co/0RVXmWJy/BCRA-logo-svg.png"
+                    src="https://dixpiyqipjzzccdlapyh.supabase.co/storage/v1/object/public/bauldemarca/banner/BCRA_logo.svg.png"
                     alt="Banco Central de la República Argentina"
                     className="w-auto h-16"
                   />
