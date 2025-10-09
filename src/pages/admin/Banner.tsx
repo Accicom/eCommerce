@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Edit2, Trash2 } from 'lucide-react';
+import { ArrowLeft, Plus, CreditCard as Edit2, Trash2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import type { Database } from '../../lib/database.types';
 
@@ -53,7 +53,8 @@ export default function Banner() {
       subtitle: formData.get('subtitle') as string,
       image: formData.get('image') as string,
       mobile_image: formData.get('mobile_image') as string || null,
-      order: currentSlide ? currentSlide.order : (slides.length + 1)
+      order: currentSlide ? currentSlide.order : (slides.length + 1),
+      show_text_overlay: formData.get('show_text_overlay') === 'on'
     };
 
     try {
@@ -248,6 +249,21 @@ export default function Banner() {
                   Tamaño recomendado: 768x250 píxeles. Si no se proporciona, se usará la imagen de desktop.
                 </p>
               </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  name="show_text_overlay"
+                  id="show_text_overlay"
+                  defaultChecked={currentSlide?.show_text_overlay ?? true}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="show_text_overlay" className="text-sm text-gray-700">
+                  Mostrar texto superpuesto y sombreado
+                </label>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Desactiva esta opción si tu imagen ya tiene texto o prefieres mostrarla sin sombreado
+              </p>
               <div className="flex justify-end space-x-3 mt-6">
                 <button
                   type="button"

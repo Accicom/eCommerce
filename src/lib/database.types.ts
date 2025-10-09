@@ -170,6 +170,9 @@ export interface Database {
           created_at?: string
           updated_at?: string
           last_attempt?: string
+      show_text_overlay: boolean
+      show_text_overlay?: boolean
+      show_text_overlay?: boolean
         }
       }
     }

@@ -4,6 +4,7 @@ import type { Database } from '../lib/database.types';
 
 type BannerSlide = Database['public']['Tables']['banner_slides']['Row'] & {
   mobile_image?: string;
+  show_text_overlay?: boolean;
 };
 
 // Default slide to show when there's an error or no slides
@@ -14,6 +15,7 @@ const DEFAULT_SLIDE = {
   image: 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&fit=crop&q=80',
   mobile_image: 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&fit=crop&q=80',
   order: 1,
+  show_text_overlay: true,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString()
 };
@@ -97,17 +99,21 @@ export default function Banner() {
               className="absolute inset-0 w-full h-full object-cover"
             />
           </picture>
-          <div className="absolute inset-0 bg-black bg-opacity-50" />
-          <div className="relative h-full flex items-center justify-center text-center">
-            <div className="max-w-4xl px-4">
-              <h2 className="text-2xl md:text-5xl font-bold text-white mb-2 md:mb-4">
-                {slide.title}
-              </h2>
-              <p className="text-base md:text-2xl text-white">
-                {slide.subtitle}
-              </p>
-            </div>
-          </div>
+          {slide.show_text_overlay && (
+            <>
+              <div className="absolute inset-0 bg-black bg-opacity-50" />
+              <div className="relative h-full flex items-center justify-center text-center">
+                <div className="max-w-4xl px-4">
+                  <h2 className="text-2xl md:text-5xl font-bold text-white mb-2 md:mb-4">
+                    {slide.title}
+                  </h2>
+                  <p className="text-base md:text-2xl text-white">
+                    {slide.subtitle}
+                  </p>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       ))}
       
