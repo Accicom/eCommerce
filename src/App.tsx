@@ -4,6 +4,7 @@ import Header from './components/Header';
 import Banner from './components/Banner';
 import MainOptions from './components/MainOptions';
 import Benefits from './components/Benefits';
+import ProductCarousel from './components/ProductCarousel';
 import Testimonials from './components/Testimonials';
 import FAQ from './components/FAQ';
 import Branches from './components/Branches';
@@ -43,6 +44,7 @@ function App() {
                 <Banner />
                 <MainOptions />
                 <Benefits />
+                <ProductCarousel />
                 <Testimonials />
                 <FAQ />
                 <Branches />
@@ -80,6 +82,7 @@ function App() {
           <Route path="/admin/orders" element={<Orders />} />
           <Route path="/admin/catalog-clients" element={<CatalogClients />} />
           <Route path="/admin/branches" element={<BranchesManagement />} />
+          <Route path="/admin/testing" element={<Testing />} />
         </Routes>
       </AnalyticsWrapper>
     </Router>
