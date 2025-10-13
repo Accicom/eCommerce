@@ -1,24 +1,23 @@
 import React from 'react';
-import { Clock, Shield, DollarSign, Users } from 'lucide-react';
 
 const benefits = [
   {
-    icon: Clock,
+    icon: 'https://dixpiyqipjzzccdlapyh.supabase.co/storage/v1/object/public/Iconos/Reloj.png',
     title: 'Aprobación Rápida',
     description: 'Proceso simplificado con respuesta en 24 horas'
   },
   {
-    icon: Shield,
+    icon: 'https://dixpiyqipjzzccdlapyh.supabase.co/storage/v1/object/public/Iconos/Seguridad.png',
     title: 'Seguridad Garantizada',
     description: 'Tus datos están protegidos con la más alta tecnología'
   },
   {
-    icon: DollarSign,
+    icon: 'https://dixpiyqipjzzccdlapyh.supabase.co/storage/v1/object/public/Iconos/Aprobacion.png',
     title: 'Mejores Tasas',
     description: 'Tasas competitivas adaptadas a tu perfil'
   },
   {
-    icon: Users,
+    icon: 'https://dixpiyqipjzzccdlapyh.supabase.co/storage/v1/object/public/Iconos/Atencion.png',
     title: 'Atención Personalizada',
     description: 'Asesores expertos a tu disposición'
   }
@@ -39,8 +38,14 @@ export default function Benefits() {
               className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg
               transition-shadow text-center"
             >
-              <div className="inline-block p-3 bg-blue-100 rounded-full mb-4">
-                <benefit.icon className="h-6 w-6 text-blue-600" />
+              <div className="flex justify-center mb-4">
+                <div className="p-3 bg-blue-100 rounded-full w-20 h-20 flex items-center justify-center">
+                  <img
+                    src={benefit.icon}
+                    alt={benefit.title}
+                    className="w-12 h-12 object-contain"
+                  />
+                </div>
               </div>
               <h3 className="text-xl font-semibold text-gray-800 mb-2">
                 {benefit.title}
