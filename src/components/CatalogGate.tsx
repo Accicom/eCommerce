@@ -121,7 +121,7 @@ export default function CatalogGate({ onAccess }: CatalogGateProps) {
         .from('catalog_leads')
         .insert([{ 
           dni, 
-          email: `${celular}@temp.com`, // Temporary email for compatibility
+          email: `lead${Date.now()}@accicom.com`, // Email temporal más realista
           status: 'approved' // Automatically approved
         }]);
 

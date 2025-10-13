@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MessageCircle, Search, Truck, ShoppingBag, Send, MessageSquare } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Search, Send, MessageSquare, ShoppingBag } from 'lucide-react';
 import ReactPaginate from 'react-paginate';
 import { supabase } from '../lib/supabase';
 import { useAnalytics } from '../hooks/useAnalytics';
@@ -8,6 +7,7 @@ import { formatPrice } from '../utils/formatters';
 import type { Database } from '../lib/database.types';
 import NewsletterPopup from '../components/NewsletterPopup';
 import CatalogGate from '../components/CatalogGate';
+import ProductCard from '../components/ProductCard';
 
 type Product = Database['public']['Tables']['products']['Row'];
 type Category = Database['public']['Tables']['categories']['Row'];
@@ -186,56 +186,6 @@ export default function Catalog() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const ProductCard = ({ product, isFeatured = false }: { product: Product, isFeatured?: boolean }) => (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-      <Link to={`/producto/${product.code}`} className="block">
-        <div className="relative h-64 bg-gray-50 flex items-center justify-center">
-          <div className="w-full h-full p-6 flex items-center justify-center">
-            <img
-              src={product.image}
-              alt={product.name}
-              className="max-w-full max-h-full object-contain"
-            />
-          </div>
-          {isFeatured && (
-            <span className="absolute top-2 right-2 bg-yellow-400 text-white px-2 py-1 rounded-full text-sm font-semibold">
-              Destacado
-            </span>
-          )}
-        </div>
-        <div className="p-4">
-          <h3 className="text-lg font-semibold text-gray-800 mb-1 line-clamp-2 min-h-[3.5rem]">
-            {product.name}
-          </h3>
-          {product.brand && (
-            <p className="text-gray-600 text-sm mb-1">{product.brand}</p>
-          )}
-          <p className="text-gray-400 text-sm mb-1">Código: {product.code}</p>
-          <p className="text-xl font-bold text-gray-800 mb-2">${formatPrice(Number(product.price))}</p>
-          <div className="flex items-center text-green-600 text-sm mb-2">
-            <Truck className="h-4 w-4 mr-1" />
-            <span>Envío gratis</span>
-          </div>
-          <div className="bg-blue-50 p-2 rounded-lg mb-2">
-            <p className="text-blue-800 font-semibold text-center text-sm">
-              ¡Hasta en 18 cuotas fijas!
-            </p>
-          </div>
-        </div>
-      </Link>
-      <div className="px-4 pb-4">
-        <button
-          onClick={() => handleWhatsAppClick(product)}
-          className="w-full bg-green-600 text-white px-4 py-2 rounded-lg
-          hover:bg-green-700 transition-colors flex items-center justify-center text-sm"
-        >
-          <MessageCircle className="w-4 h-4 mr-2" />
-          Me interesa
-        </button>
-      </div>
-    </div>
-  );
-
   if (!hasAccess) {
     return <CatalogGate onAccess={handleCatalogAccess} />;
   }
@@ -277,7 +227,13 @@ export default function Catalog() {
           <h2 className="text-2xl font-bold text-gray-800 mb-6">Destacados del Mes</h2>
           <div className="grid md:grid-cols-4 gap-6">
             {featuredProducts.slice(0, 4).map(product => (
-              <ProductCard key={product.id} product={product} isFeatured={true} />
+              <ProductCard 
+                key={product.id} 
+                product={product} 
+                variant="full"
+                isFeatured={true}
+                onWhatsAppClick={handleWhatsAppClick}
+              />
             ))}
           </div>
         </div>
@@ -315,7 +271,12 @@ export default function Catalog() {
       <div className="container mx-auto px-4 py-8">
         <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-6">
           {currentPageProducts.map(product => (
-            <ProductCard key={product.id} product={product} />
+            <ProductCard 
+              key={product.id} 
+              product={product} 
+              variant="full"
+              onWhatsAppClick={handleWhatsAppClick}
+            />
           ))}
         </div>
 
