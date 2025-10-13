@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Package, Image, LogOut, Tag, Mail, MessageSquare, ShoppingCart, Users, MapPin } from 'lucide-react';
+import { Package, Image, LogOut, Tag, Mail, MessageSquare, ShoppingCart, Users, MapPin, TestTube } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 export default function Dashboard() {
@@ -50,6 +50,7 @@ export default function Dashboard() {
       </nav>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div
             onClick={() => navigate('/admin/products')}
@@ -108,6 +109,21 @@ export default function Dashboard() {
             </div>
             <p className="text-gray-600">
               Gestiona los suscriptores del newsletter y sus códigos de descuento.
+            </p>
+          </div>
+
+          <div
+            onClick={() => navigate('/admin/testing')}
+            className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer"
+          >
+            <div className="flex items-center mb-4">
+              <TestTube className="h-8 w-8 text-blue-600" />
+              <h2 className="text-xl font-semibold text-gray-800 ml-3">
+                Pruebas de Funcionamiento
+              </h2>
+            </div>
+            <p className="text-gray-600">
+              Herramientas de diagnóstico para verificar el funcionamiento del sistema.
             </p>
           </div>
 

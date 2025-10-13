@@ -23,6 +23,7 @@ import PopupManagement from './pages/admin/PopupManagement';
 import Orders from './pages/admin/Orders';
 import CatalogClients from './pages/admin/CatalogClients';
 import BranchesManagement from './pages/admin/Branches';
+import Testing from './pages/admin/Testing';
 import { useAnalytics } from './hooks/useAnalytics';
 
 // Analytics wrapper component
