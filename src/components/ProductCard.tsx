@@ -32,7 +32,10 @@ export default function ProductCard({ product, isFeatured = false, variant = 'fu
               </span>
             )}
           </div>
-          <div className="p-2 text-center">
+          <div className="p-3 text-center">
+            <h3 className="text-sm font-semibold text-gray-800 mb-1 line-clamp-2 min-h-[2.5rem]">
+              {product.name}
+            </h3>
             <p className="text-sm font-bold text-gray-800">${formatPrice(Number(product.price))}</p>
           </div>
         </div>
