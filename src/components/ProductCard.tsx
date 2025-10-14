@@ -36,7 +36,14 @@ export default function ProductCard({ product, isFeatured = false, variant = 'fu
             <h3 className="text-sm font-semibold text-gray-800 mb-1 line-clamp-2 min-h-[2.5rem]">
               {product.name}
             </h3>
-            <p className="text-sm font-bold text-gray-800">${formatPrice(Number(product.price))}</p>
+            <p className="text-sm font-bold text-gray-800 mb-1">${formatPrice(Number(product.price))}</p>
+            <div className="flex flex-col gap-1 text-xs">
+              <div className="flex items-center justify-center gap-1 text-green-600 font-medium">
+                <Truck className="h-3 w-3" />
+                <span>Envío gratis</span>
+              </div>
+              <span className="text-blue-600 font-medium">Hasta 18 cuotas fijas</span>
+            </div>
           </div>
         </div>
       </Link>
@@ -69,10 +76,6 @@ export default function ProductCard({ product, isFeatured = false, variant = 'fu
           )}
           <p className="text-gray-400 text-sm mb-1">Código: {product.code}</p>
           <p className="text-xl font-bold text-gray-800 mb-2">${formatPrice(Number(product.price))}</p>
-          <div className="flex items-center text-green-600 text-sm mb-2">
-            <Truck className="h-4 w-4 mr-1" />
-            <span>Envío gratis</span>
-          </div>
           <div className="flex items-center text-green-600 text-sm mb-2">
             <Truck className="h-4 w-4 mr-1" />
             <span>Envío gratis</span>

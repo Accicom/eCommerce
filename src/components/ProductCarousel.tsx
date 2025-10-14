@@ -75,13 +75,13 @@ export default function ProductCarousel() {
   }
 
   return (
-    <section className="py-16 bg-blue-600">
+    <section className="py-8 md:py-16 bg-blue-600">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-white mb-2">
+        <div className="text-center mb-6 md:mb-12">
+          <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
             Productos Destacados
           </h2>
-          <p className="text-white/90">
+          <p className="text-sm md:text-base text-white/90">
             Descubre nuestros productos más populares con financiamiento flexible
           </p>
         </div>
@@ -146,16 +146,6 @@ export default function ProductCarousel() {
           )}
         </div>
 
-        {/* Botón ver catálogo completo */}
-        <div className="text-center mt-8">
-          <Link
-            to="/catalogo"
-            className="inline-flex items-center bg-white text-blue-600 px-6 py-3 rounded-lg hover:bg-gray-50 transition-colors font-semibold"
-          >
-            <ShoppingBag className="h-5 w-5 mr-2" />
-            Ver catálogo completo
-          </Link>
-        </div>
       </div>
     </section>
   );

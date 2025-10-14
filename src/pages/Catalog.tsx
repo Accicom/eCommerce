@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Send, MessageSquare, ShoppingBag } from 'lucide-react';
+import { Search } from 'lucide-react';
 import ReactPaginate from 'react-paginate';
 import { supabase } from '../lib/supabase';
 import { useAnalytics } from '../hooks/useAnalytics';
@@ -8,52 +8,11 @@ import type { Database } from '../lib/database.types';
 import NewsletterPopup from '../components/NewsletterPopup';
 import CatalogGate from '../components/CatalogGate';
 import ProductCard from '../components/ProductCard';
+import ProductCarousel from '../components/ProductCarousel';
+import Header from '../components/Header';
 
 type Product = Database['public']['Tables']['products']['Row'];
 type Category = Database['public']['Tables']['categories']['Row'];
-
-const CatalogInstructions = () => (
-  <div className="container mx-auto px-4 py-2">
-    <div className="bg-white shadow-lg rounded-xl overflow-hidden">
-      <div className="bg-gradient-to-r from-blue-600 to-blue-800 px-4 py-2">
-        <h2 className="text-base md:text-lg font-medium text-white/90 text-center">
-          Proceso de compra simple y rápido
-        </h2>
-      </div>
-      <div className="p-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-4">
-          <div className="flex flex-col items-center text-center">
-            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-3">
-              <ShoppingBag className="w-6 h-6 text-blue-600" />
-            </div>
-            <div className="flex items-center space-x-2">
-              <span className="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm font-medium">1</span>
-              <h3 className="font-medium text-gray-900">Explora el catálogo</h3>
-            </div>
-          </div>
-          <div className="flex flex-col items-center text-center">
-            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-3">
-              <Send className="w-6 h-6 text-blue-600" />
-            </div>
-            <div className="flex items-center space-x-2">
-              <span className="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm font-medium">2</span>
-              <h3 className="font-medium text-gray-900">Presiona "Me interesa"</h3>
-            </div>
-          </div>
-          <div className="flex flex-col items-center text-center">
-            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-3">
-              <MessageSquare className="w-6 h-6 text-blue-600" />
-            </div>
-            <div className="flex items-center space-x-2">
-              <span className="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm font-medium">3</span>
-              <h3 className="font-medium text-gray-900">Finaliza con un asesor</h3>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-);
 
 export default function Catalog() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -67,7 +26,7 @@ export default function Catalog() {
   const [currentPage, setCurrentPage] = useState(0);
   const { trackEvent } = useAnalytics();
 
-  const productsPerPage = 12;
+  const productsPerPage = 24;
 
   useEffect(() => {
     if (hasAccess) {
@@ -201,46 +160,35 @@ export default function Catalog() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 pt-20">
+    <div className="min-h-screen bg-gray-100">
+      <Header
+        categories={categories}
+        selectedCategory={selectedCategory}
+        onCategorySelect={handleCategorySelect}
+      />
       <NewsletterPopup />
 
-      {/* Instructions Banner */}
-      <CatalogInstructions />
-
       {/* Search Bar */}
-      <div className="container mx-auto px-4 py-6">
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Buscar por nombre, código o marca..."
-            value={searchTerm}
-            onChange={(e) => handleSearch(e.target.value)}
-            className="w-full px-4 py-2 pl-10 pr-4 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+      <div className="pt-16 bg-white border-b">
+        <div className="container mx-auto px-4 py-3">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Buscar productos..."
+              value={searchTerm}
+              onChange={(e) => handleSearch(e.target.value)}
+              className="w-full px-4 py-2 pl-10 pr-4 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+          </div>
         </div>
       </div>
 
-      {/* Featured Products */}
-      {featuredProducts.length > 0 && !searchTerm && !selectedCategory && (
-        <div className="container mx-auto px-4 py-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">Destacados del Mes</h2>
-          <div className="grid md:grid-cols-4 gap-6">
-            {featuredProducts.slice(0, 4).map(product => (
-              <ProductCard 
-                key={product.id} 
-                product={product} 
-                variant="full"
-                isFeatured={true}
-                onWhatsAppClick={handleWhatsAppClick}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Carousel */}
+      <ProductCarousel />
 
-      {/* Categories */}
-      <div className="container mx-auto px-4 py-8">
+      {/* Desktop Categories */}
+      <div className="hidden md:block container mx-auto px-4 py-8">
         <h2 className="text-2xl font-bold text-gray-800 mb-6">Categorías</h2>
         <div className="flex flex-wrap gap-4">
           {categories.map(category => (
@@ -269,12 +217,12 @@ export default function Catalog() {
 
       {/* Products Grid */}
       <div className="container mx-auto px-4 py-8">
-        <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
           {currentPageProducts.map(product => (
-            <ProductCard 
-              key={product.id} 
-              product={product} 
-              variant="full"
+            <ProductCard
+              key={product.id}
+              product={product}
+              variant={window.innerWidth >= 768 ? 'full' : 'minimal'}
               onWhatsAppClick={handleWhatsAppClick}
             />
           ))}
@@ -282,21 +230,21 @@ export default function Catalog() {
 
         {/* Pagination */}
         {filteredProducts.length > productsPerPage && (
-          <div className="mt-8">
+          <div className="mt-8 overflow-x-auto pb-4">
             <ReactPaginate
               previousLabel="Anterior"
               nextLabel="Siguiente"
               pageCount={pageCount}
               onPageChange={handlePageChange}
               forcePage={currentPage}
-              containerClassName="flex items-center justify-center gap-2"
-              pageClassName="px-3 py-2 rounded-lg border hover:bg-gray-50 transition-colors"
+              containerClassName="flex items-center justify-center gap-2 min-w-max px-4"
+              pageClassName="px-2 md:px-3 py-2 rounded-lg border hover:bg-gray-50 transition-colors text-sm"
               activeClassName="!bg-blue-600 !text-white !border-blue-600"
-              previousClassName="px-3 py-2 rounded-lg border hover:bg-gray-50 transition-colors"
-              nextClassName="px-3 py-2 rounded-lg border hover:bg-gray-50 transition-colors"
+              previousClassName="px-2 md:px-3 py-2 rounded-lg border hover:bg-gray-50 transition-colors text-sm whitespace-nowrap"
+              nextClassName="px-2 md:px-3 py-2 rounded-lg border hover:bg-gray-50 transition-colors text-sm whitespace-nowrap"
               disabledClassName="opacity-50 cursor-not-allowed hover:bg-transparent"
               breakLabel="..."
-              breakClassName="px-3 py-2"
+              breakClassName="px-2 py-2 text-sm"
             />
           </div>
         )}

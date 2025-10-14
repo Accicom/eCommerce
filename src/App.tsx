@@ -57,7 +57,6 @@ function App() {
           } />
           <Route path="/catalogo" element={
             <div className="min-h-screen bg-gray-100">
-              <Header />
               <Catalog />
               <Footer />
               <WhatsAppButton />

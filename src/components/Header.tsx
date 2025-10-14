@@ -1,10 +1,18 @@
 import React from 'react';
 import { Menu, X, CreditCard, Phone, HelpCircle, Home, Wallet } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 
-export default function Header() {
+interface HeaderProps {
+  categories?: any[];
+  selectedCategory?: string | null;
+  onCategorySelect?: (category: string | null) => void;
+}
+
+export default function Header({ categories = [], selectedCategory, onCategorySelect }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const isCatalogPage = location.pathname === '/catalogo';
 
   const handleCatalogClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -19,7 +27,7 @@ export default function Header() {
           <div className="flex items-center">
             <Link to="/" className="flex items-center">
               <img 
-                src="https://dixpiyqipjzzccdlapyh.supabase.co/storage/v1/object/public/bauldemarca/logo/Logo_Accicom_HD-%20sin%20fondo.png" 
+                src="https://i.ibb.co/1XwxY9x/Logo-Accicom-HD-sin-fondo.png" 
                 alt="Accicom" 
                 className="h-8"
               />
@@ -67,28 +75,65 @@ export default function Header() {
 
         {/* Mobile menu */}
         {isMenuOpen && (
-          <div className="md:hidden">
-            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-              <Link to="/" className="block px-3 py-2 text-gray-600 hover:text-blue-600">
-                Inicio
-              </Link>
-              <Link to="https://wa.me/5493513486125" className="block px-3 py-2 text-gray-600 hover:text-blue-600">
-                Préstamo
-              </Link>
-              <a
-                href="/catalogo"
-                onClick={handleCatalogClick}
-                className="block px-3 py-2 text-gray-600 hover:text-blue-600"
-              >
-                Catálogo
-              </a>
-              {/* <Link to="/contacto" className="block px-3 py-2 text-gray-600 hover:text-blue-600">
-                Contacto
-              </Link> */}
-              {/* <Link to="/faq" className="block px-3 py-2 text-gray-600 hover:text-blue-600">
-                FAQ
-              </Link> */}
-            </div>
+          <div className="md:hidden fixed inset-0 top-16 bg-white z-50 overflow-y-auto">
+            {isCatalogPage && categories.length > 0 ? (
+              <div className="p-4">
+                <h2 className="text-lg font-bold text-gray-800 mb-4">Categorías</h2>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => {
+                      if (onCategorySelect) onCategorySelect(null);
+                      setIsMenuOpen(false);
+                    }}
+                    className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
+                      !selectedCategory
+                        ? 'bg-blue-600 text-white font-semibold'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    Todas las categorías
+                  </button>
+                  {categories.map(category => (
+                    <button
+                      key={category.id}
+                      onClick={() => {
+                        if (onCategorySelect) onCategorySelect(category.name);
+                        setIsMenuOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
+                        selectedCategory === category.name
+                          ? 'bg-blue-600 text-white font-semibold'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {category.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                <Link to="/" className="block px-3 py-2 text-gray-600 hover:text-blue-600" onClick={() => setIsMenuOpen(false)}>
+                  Inicio
+                </Link>
+                <Link to="https://wa.me/5493513486125" className="block px-3 py-2 text-gray-600 hover:text-blue-600" onClick={() => setIsMenuOpen(false)}>
+                  Préstamo
+                </Link>
+                <a
+                  href="/catalogo"
+                  onClick={(e) => { handleCatalogClick(e); setIsMenuOpen(false); }}
+                  className="block px-3 py-2 text-gray-600 hover:text-blue-600"
+                >
+                  Catálogo
+                </a>
+                {/* <Link to="/contacto" className="block px-3 py-2 text-gray-600 hover:text-blue-600" onClick={() => setIsMenuOpen(false)}>
+                  Contacto
+                </Link> */}
+                {/* <Link to="/faq" className="block px-3 py-2 text-gray-600 hover:text-blue-600" onClick={() => setIsMenuOpen(false)}>
+                  FAQ
+                </Link> */}
+              </div>
+            )}
           </div>
         )}
       </div>
