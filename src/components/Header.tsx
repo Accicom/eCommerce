@@ -27,7 +27,7 @@ export default function Header({ categories = [], selectedCategory, onCategorySe
           <div className="flex items-center">
             <Link to="/" className="flex items-center">
               <img 
-                src="https://i.ibb.co/1XwxY9x/Logo-Accicom-HD-sin-fondo.png" 
+                src="https://dixpiyqipjzzccdlapyh.supabase.co/storage/v1/object/public/bauldemarca/logo/Logo_Accicom_HD-%20sin%20fondo.png" 
                 alt="Accicom" 
                 className="h-8"
               />
