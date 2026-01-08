@@ -24,7 +24,7 @@ export default function MainOptions() {
             y plazos flexibles adaptados a tu capacidad de pago.
           </p>
           <Link
-            to="https://wa.me/5493513486125"
+            to="https://app.accicom.com.ar/"
             className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg
             hover:bg-blue-700 transition-colors font-semibold"
           >
