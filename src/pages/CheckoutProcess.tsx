@@ -172,7 +172,7 @@ export default function CheckoutProcess() {
     }
   };
 
-  const handleConfirmIdentity = () => {
+  const handleConfirmIdentity = async () => {
     if (!client || !product) return;
 
     const oferta = Number(client.oferta_maxima) || 0;
@@ -182,6 +182,51 @@ export default function CheckoutProcess() {
       setStep('payment_terms');
     } else {
       setStep('not_eligible');
+      await savePurchaseIntent(oferta);
+    }
+  };
+
+  const savePurchaseIntent = async (clientOffer: number) => {
+    if (!client || !product) return;
+
+    try {
+      await supabase
+        .from('purchase_intents')
+        .insert([{
+          client_id: client.id,
+          product_id: product.id,
+          product_name: product.name,
+          product_code: product.code,
+          product_price: product.price,
+          client_offer: clientOffer,
+          client_name: client.name,
+          client_dni: client.dni,
+          client_email: client.email,
+          client_phone: client.celular,
+          status: 'pending',
+        }]);
+
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-intent-notification`;
+      await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          clientName: client.name,
+          clientDni: client.dni,
+          clientEmail: client.email,
+          clientPhone: client.celular,
+          productName: product.name,
+          productCode: product.code,
+          productPrice: Number(product.price),
+          clientOffer: clientOffer,
+          timestamp: new Date().toISOString(),
+        }),
+      });
+    } catch (err) {
+      console.error('Error saving purchase intent:', err);
     }
   };
 
@@ -464,18 +509,21 @@ export default function CheckoutProcess() {
 
               {step === 'not_eligible' && (
                 <div className="max-w-sm mx-auto text-center py-4">
-                  <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-5">
-                    <AlertCircle className="h-8 w-8 text-amber-600" />
+                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-5">
+                    <CheckCircle className="h-8 w-8 text-blue-600" />
                   </div>
-                  <h2 className="text-xl font-bold text-gray-800 mb-3">No es posible continuar</h2>
-                  <p className="text-gray-600 mb-8 leading-relaxed">
-                    {'Tu l\u00edmite de compra autorizado no alcanza para adquirir este producto en este momento.'}
+                  <h2 className="text-xl font-bold text-gray-800 mb-3">Solicitud recibida</h2>
+                  <p className="text-gray-600 mb-4 leading-relaxed">
+                    Estamos evaluando tu solicitud de compra. En breve, un asesor se va a comunicar con vos para darte una respuesta.
+                  </p>
+                  <p className="text-gray-500 text-sm mb-8">
+                    Registramos tu interes y te contactaremos a la brevedad.
                   </p>
                   <Link
                     to="/catalogo"
                     className="inline-block bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors font-semibold"
                   >
-                    Ver otros productos
+                    Seguir viendo productos
                   </Link>
                 </div>
               )}
