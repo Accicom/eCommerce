@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Package, Image, LogOut, Tag, Mail, MessageSquare, ShoppingCart, Users, MapPin, TestTube } from 'lucide-react';
+import { Package, Image, LogOut, Tag, Mail, MessageSquare, ShoppingCart, Users, MapPin, TestTube, Bell, Layers } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 export default function Dashboard() {
@@ -98,6 +98,21 @@ export default function Dashboard() {
           </div>
 
           <div
+            onClick={() => navigate('/admin/info-banners')}
+            className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer"
+          >
+            <div className="flex items-center mb-4">
+              <Bell className="h-8 w-8 text-blue-600" />
+              <h2 className="text-xl font-semibold text-gray-800 ml-3">
+                Banners Informativos
+              </h2>
+            </div>
+            <p className="text-gray-600">
+              Gestiona los anuncios informativos que aparecen arriba del header.
+            </p>
+          </div>
+
+          <div
             onClick={() => navigate('/admin/subscriptions')}
             className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer"
           >
@@ -169,6 +184,21 @@ export default function Dashboard() {
             </div>
             <p className="text-gray-600">
               Gestiona los clientes con acceso al catálogo y leads interesados.
+            </p>
+          </div>
+
+          <div
+            onClick={() => navigate('/admin/showcase-groups')}
+            className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer"
+          >
+            <div className="flex items-center mb-4">
+              <Layers className="h-8 w-8 text-blue-600" />
+              <h2 className="text-xl font-semibold text-gray-800 ml-3">
+                Grupos de Exhibición
+              </h2>
+            </div>
+            <p className="text-gray-600">
+              Crea grupos de productos por categoría para mostrar en la página principal.
             </p>
           </div>
 

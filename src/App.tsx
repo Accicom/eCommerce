@@ -27,6 +27,7 @@ import Orders from './pages/admin/Orders';
 import CatalogClients from './pages/admin/CatalogClients';
 import BranchesManagement from './pages/admin/Branches';
 import Testing from './pages/admin/Testing';
+import ShowcaseGroupsManagement from './pages/admin/ShowcaseGroups';
 import { useAnalytics } from './hooks/useAnalytics';
 
 // Analytics wrapper component
@@ -94,6 +95,7 @@ function App() {
           <Route path="/admin/orders" element={<Orders />} />
           <Route path="/admin/catalog-clients" element={<CatalogClients />} />
           <Route path="/admin/branches" element={<BranchesManagement />} />
+          <Route path="/admin/showcase-groups" element={<ShowcaseGroupsManagement />} />
           <Route path="/admin/testing" element={<Testing />} />
         </Routes>
       </AnalyticsWrapper>
