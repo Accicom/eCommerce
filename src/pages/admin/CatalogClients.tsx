@@ -72,6 +72,7 @@ export default function CatalogClients() {
       cuit: formData.get('cuit') as string || null,
       celular: formData.get('celular') as string || null,
       email: formData.get('email') as string || null,
+      oferta_maxima: formData.get('oferta_maxima') ? parseFloat(formData.get('oferta_maxima') as string) : null,
     };
 
     try {
@@ -188,12 +189,19 @@ export default function CatalogClients() {
           continue;
         }
 
+        // Validar oferta_maxima si está presente
+        if (row.oferta_maxima && (isNaN(parseFloat(row.oferta_maxima)) || parseFloat(row.oferta_maxima) < 0)) {
+          errors.push(`Fila ${rowNumber}: Oferta máxima inválida (debe ser un número positivo)`);
+          continue;
+        }
+
         validClients.push({
           name: row.name.toString(),
           dni: row.dni.toString(),
           cuit: row.cuit?.toString() || null,
           celular: row.celular?.toString() || null,
           email: row.email?.toString() || null,
+          oferta_maxima: row.oferta_maxima ? parseFloat(row.oferta_maxima) : null,
         });
       }
 
@@ -224,8 +232,8 @@ export default function CatalogClients() {
 
   const downloadCSV = () => {
     const data = activeTab === 'clients' ? clients : leads;
-    const headers = activeTab === 'clients' 
-      ? ['Nombre', 'DNI', 'CUIT', 'Celular', 'Última vez visto', 'Fecha de registro']
+    const headers = activeTab === 'clients'
+      ? ['Nombre', 'DNI', 'CUIT', 'Celular', 'Email', 'Oferta Máxima', 'Última vez visto', 'Fecha de registro']
       : ['DNI', 'Email', 'Estado', 'Último intento', 'Fecha de registro'];
 
     const csvData = data.map(item => {
@@ -236,6 +244,8 @@ export default function CatalogClients() {
           client.dni,
           client.cuit || '',
           client.celular || '',
+          client.email || '',
+          client.oferta_maxima?.toString() || '',
           client.last_seen ? new Date(client.last_seen).toLocaleDateString() : 'Nunca',
           new Date(client.created_at).toLocaleDateString()
         ];
@@ -586,6 +596,30 @@ export default function CatalogClients() {
                       defaultValue={currentClient?.celular}
                     />
                   </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email
+                    </label>
+                    <input
+                      name="email"
+                      type="email"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      defaultValue={currentClient?.email}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Oferta Máxima ($)
+                    </label>
+                    <input
+                      name="oferta_maxima"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      defaultValue={currentClient?.oferta_maxima}
+                    />
+                  </div>
                   <div className="flex justify-end space-x-3 mt-6">
                     <button
                       type="button"
@@ -618,6 +652,8 @@ export default function CatalogClients() {
                         <li>dni (DNI - obligatorio, 7 u 8 dígitos)</li>
                         <li>cuit (CUIT - opcional, 11 dígitos)</li>
                         <li>celular (Celular - opcional)</li>
+                        <li>email (Email - opcional)</li>
+                        <li>oferta_maxima (Oferta máxima - opcional, número)</li>
                       </ul>
                     </li>
                     <li>Asegúrese de que los DNIs y CUITs no estén duplicados</li>
