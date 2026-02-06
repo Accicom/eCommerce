@@ -3,10 +3,8 @@ import { Search } from 'lucide-react';
 import ReactPaginate from 'react-paginate';
 import { supabase } from '../lib/supabase';
 import { useAnalytics } from '../hooks/useAnalytics';
-import { formatPrice } from '../utils/formatters';
 import type { Database } from '../lib/database.types';
 import NewsletterPopup from '../components/NewsletterPopup';
-import CatalogGate from '../components/CatalogGate';
 import ProductCard from '../components/ProductCard';
 import ProductCarousel from '../components/ProductCarousel';
 import Header from '../components/Header';
@@ -21,19 +19,15 @@ export default function Catalog() {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [hasAccess, setHasAccess] = useState(false);
-  const [clientData, setClientData] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const { trackEvent } = useAnalytics();
 
   const productsPerPage = 24;
 
   useEffect(() => {
-    if (hasAccess) {
-      fetchProducts();
-      fetchCategories();
-    }
-  }, [hasAccess]);
+    fetchProducts();
+    fetchCategories();
+  }, []);
 
   useEffect(() => {
     // Reset to first page when filters change
@@ -85,41 +79,6 @@ export default function Catalog() {
   const offset = currentPage * productsPerPage;
   const currentPageProducts = filteredProducts.slice(offset, offset + productsPerPage);
 
-  const handleWhatsAppClick = async (product: Product) => {
-    const message = `¡Hola! Me interesa el siguiente producto:\n\n${product.name}\nCódigo: ${product.code}\nPrecio: $${formatPrice(Number(product.price))}`;
-
-    try {
-      // Save as completed order
-      const orderNumber = Math.floor(Math.random() * 1000000);
-      const orderData = {
-        order_number: `#${orderNumber}`,
-        order_data: [{
-          product_id: product.id,
-          product_name: product.name,
-          quantity: 1,
-          price: product.price
-        }],
-        total_amount: product.price,
-        whatsapp_message: message,
-        client_id: clientData?.id || null
-      };
-
-      const { error } = await supabase
-        .from('completed_orders')
-        .insert([orderData]);
-
-      if (error) throw error;
-
-      // Track conversion event
-      trackEvent('conversion', 'whatsapp', product.name, Number(product.price));
-      
-      // Open WhatsApp
-      window.open(`https://wa.me/5493513486125?text=${encodeURIComponent(message)}`, '_blank');
-    } catch (error) {
-      console.error('Error saving order:', error);
-    }
-  };
-
   const handleCategorySelect = (categoryName: string | null) => {
     setSelectedCategory(categoryName);
     if (categoryName) {
@@ -134,20 +93,10 @@ export default function Catalog() {
     }
   };
 
-  const handleCatalogAccess = (data: any) => {
-    setHasAccess(true);
-    setClientData(data);
-    trackEvent('catalog_access', 'authentication', data.name);
-  };
-
   const handlePageChange = ({ selected }: { selected: number }) => {
     setCurrentPage(selected);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-
-  if (!hasAccess) {
-    return <CatalogGate onAccess={handleCatalogAccess} />;
-  }
 
   if (isLoading) {
     return (
@@ -223,7 +172,6 @@ export default function Catalog() {
               key={product.id}
               product={product}
               variant={window.innerWidth >= 768 ? 'full' : 'minimal'}
-              onWhatsAppClick={handleWhatsAppClick}
             />
           ))}
         </div>

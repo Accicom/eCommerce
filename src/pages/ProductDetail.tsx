@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { Truck, MessageCircle, ArrowLeft } from 'lucide-react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { Truck, ArrowLeft } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { formatPrice } from '../utils/formatters';
 import { useAnalytics } from '../hooks/useAnalytics';
@@ -10,18 +10,14 @@ type Product = Database['public']['Tables']['products']['Row'];
 
 export default function ProductDetail() {
   const { code } = useParams();
+  const navigate = useNavigate();
   const [product, setProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [clientData, setClientData] = useState<any>(null);
   const { trackEvent } = useAnalytics();
 
   useEffect(() => {
     window.scrollTo(0, 0);
     fetchProduct();
-    const savedClient = localStorage.getItem('catalog_client');
-    if (savedClient) {
-      setClientData(JSON.parse(savedClient));
-    }
   }, [code]);
 
   const fetchProduct = async () => {
@@ -46,41 +42,9 @@ export default function ProductDetail() {
     }
   };
 
-  const handleWhatsAppClick = async () => {
+  const handleBuyClick = () => {
     if (!product) return;
-
-    const message = `¡Hola! Me interesa el siguiente producto:\n\n${product.name}\nCódigo: ${product.code}\nPrecio: $${formatPrice(Number(product.price))}`;
-
-    try {
-      // Save as completed order
-      const orderNumber = Math.floor(Math.random() * 1000000);
-      const orderData = {
-        order_number: `#${orderNumber}`,
-        order_data: [{
-          product_id: product.id,
-          product_name: product.name,
-          quantity: 1,
-          price: product.price
-        }],
-        total_amount: product.price,
-        whatsapp_message: message,
-        client_id: clientData?.id || null
-      };
-
-      const { error } = await supabase
-        .from('completed_orders')
-        .insert([orderData]);
-
-      if (error) throw error;
-
-      // Track conversion event
-      trackEvent('conversion', 'whatsapp', product.name, Number(product.price));
-      
-      // Open WhatsApp
-      window.open(`https://wa.me/5493513486125?text=${encodeURIComponent(message)}`, '_blank');
-    } catch (error) {
-      console.error('Error saving order:', error);
-    }
+    navigate(`/checkout/${product.code}`);
   };
 
   if (isLoading) {
@@ -150,19 +114,18 @@ export default function ProductDetail() {
                 </div>
               </div>
 
-              <div className="bg-blue-50 p-4 rounded-lg mb-6">
-                <p className="text-blue-800 font-semibold text-center">
-                  ¡Hasta en 18 cuotas fijas!
+              <div className="bg-gray-50 p-4 rounded-lg mb-6 border border-gray-200">
+                <p className="text-gray-700 text-center text-sm leading-relaxed">
+                  <span className="font-semibold">Hasta 18 cuotas fijas</span> con Crédito Accicom
                 </p>
               </div>
 
               <button
-                onClick={handleWhatsAppClick}
-                className="w-full bg-green-600 text-white px-6 py-3 rounded-lg
-                hover:bg-green-700 transition-colors flex items-center justify-center"
+                onClick={handleBuyClick}
+                className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg
+                hover:bg-blue-700 transition-colors font-semibold text-lg"
               >
-                <MessageCircle className="w-5 w-5 mr-2" />
-                Me interesa
+                Comprar
               </button>
             </div>
           </div>

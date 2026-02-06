@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import InfoBanner from './components/InfoBanner';
 import Header from './components/Header';
 import Banner from './components/Banner';
 import MainOptions from './components/MainOptions';
@@ -13,11 +14,13 @@ import Footer from './components/Footer';
 import WhatsAppButton from './components/WhatsAppButton';
 import Catalog from './pages/Catalog';
 import ProductDetail from './pages/ProductDetail';
+import CheckoutProcess from './pages/CheckoutProcess';
 import Login from './pages/admin/Login';
 import Dashboard from './pages/admin/Dashboard';
 import Products from './pages/admin/Products';
 import Categories from './pages/admin/Categories';
 import BannerManagement from './pages/admin/Banner';
+import InfoBannersManagement from './pages/admin/InfoBanners';
 import Subscriptions from './pages/admin/Subscriptions';
 import PopupManagement from './pages/admin/PopupManagement';
 import Orders from './pages/admin/Orders';
@@ -36,6 +39,7 @@ function App() {
   return (
     <Router>
       <AnalyticsWrapper>
+        <InfoBanner />
         <Routes>
           {/* Rutas públicas */}
           <Route path="/" element={
@@ -70,6 +74,13 @@ function App() {
               <WhatsAppButton />
             </div>
           } />
+          <Route path="/checkout/:code" element={
+            <div className="min-h-screen bg-gray-50">
+              <Header />
+              <CheckoutProcess />
+              <Footer />
+            </div>
+          } />
 
           {/* Rutas de administración */}
           <Route path="/admin" element={<Login />} />
@@ -77,6 +88,7 @@ function App() {
           <Route path="/admin/products" element={<Products />} />
           <Route path="/admin/categories" element={<Categories />} />
           <Route path="/admin/banner" element={<BannerManagement />} />
+          <Route path="/admin/info-banners" element={<InfoBannersManagement />} />
           <Route path="/admin/subscriptions" element={<Subscriptions />} />
           <Route path="/admin/popup" element={<PopupManagement />} />
           <Route path="/admin/orders" element={<Orders />} />
