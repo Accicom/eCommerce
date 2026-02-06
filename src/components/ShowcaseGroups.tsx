@@ -131,39 +131,41 @@ export default function ShowcaseGroups() {
         .select('group_id, category_name')
         .in('group_id', groupIds);
 
-      if (gcError || !gcData || gcData.length === 0) {
-        setGroups([]);
-        setIsLoading(false);
-        return;
-      }
-
       const categoryMap: Record<string, string[]> = {};
-      gcData.forEach(gc => {
-        if (!categoryMap[gc.group_id]) categoryMap[gc.group_id] = [];
-        categoryMap[gc.group_id].push(gc.category_name);
-      });
 
-      const allCategoryNames = [...new Set(gcData.map(gc => gc.category_name))];
-
-      const { data: products, error: prodError } = await supabase
-        .from('products')
-        .select('*')
-        .eq('visible', true)
-        .in('category', allCategoryNames)
-        .order('created_at', { ascending: false })
-        .limit(200);
-
-      if (prodError || !products) {
-        setGroups([]);
-        setIsLoading(false);
-        return;
+      if (!gcError && gcData && gcData.length > 0) {
+        gcData.forEach(gc => {
+          if (!categoryMap[gc.group_id]) categoryMap[gc.group_id] = [];
+          categoryMap[gc.group_id].push(gc.category_name);
+        });
       }
 
-      const productsByCategory: Record<string, Product[]> = {};
-      products.forEach(p => {
-        if (!productsByCategory[p.category]) productsByCategory[p.category] = [];
-        productsByCategory[p.category].push(p);
-      });
+      const allCategoryNames = [...new Set(Object.values(categoryMap).flat())];
+
+      let productsByCategory: Record<string, Product[]> = {};
+
+      if (allCategoryNames.length > 0) {
+        const batchSize = 50;
+        const allProducts: Product[] = [];
+
+        for (let i = 0; i < allCategoryNames.length; i += batchSize) {
+          const batch = allCategoryNames.slice(i, i + batchSize);
+          const { data: products } = await supabase
+            .from('products')
+            .select('*')
+            .eq('visible', true)
+            .in('category', batch)
+            .order('created_at', { ascending: false })
+            .limit(1000);
+
+          if (products) allProducts.push(...products);
+        }
+
+        allProducts.forEach(p => {
+          if (!productsByCategory[p.category]) productsByCategory[p.category] = [];
+          productsByCategory[p.category].push(p);
+        });
+      }
 
       const result: GroupWithProducts[] = [];
 
