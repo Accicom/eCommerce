@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Plus,
@@ -11,6 +11,8 @@ import {
   Eye,
   EyeOff,
   Download,
+  Filter,
+  X,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { read, utils, write } from 'xlsx';
@@ -44,6 +46,15 @@ export default function Products() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [financingForms, setFinancingForms] = useState<Record<number, FinancingFormData>>({});
 
+  const [filterCategory, setFilterCategory] = useState<string>('');
+  const [filterBrand, setFilterBrand] = useState<string>('');
+  const [filterMinPrice, setFilterMinPrice] = useState<string>('');
+  const [filterMaxPrice, setFilterMaxPrice] = useState<string>('');
+  const [filterVisible, setFilterVisible] = useState<string>('all');
+  const [filterFeatured, setFilterFeatured] = useState<string>('all');
+  const [sortOrder, setSortOrder] = useState<string>('newest');
+  const [showFilters, setShowFilters] = useState(false);
+
   const initFinancingForms = (plans: FinancingPlan[]) => {
     const forms: Record<number, FinancingFormData> = {};
     for (const inst of AVAILABLE_INSTALLMENTS) {
@@ -64,6 +75,85 @@ export default function Products() {
     }
     setFinancingForms(forms);
   };
+
+  const availableBrands = useMemo(() => {
+    const brands = new Set<string>();
+    products.forEach(p => {
+      if (p.brand) brands.add(p.brand);
+    });
+    return Array.from(brands).sort();
+  }, [products]);
+
+  const filteredAndSortedProducts = useMemo(() => {
+    let filtered = [...products];
+
+    if (filterCategory) {
+      filtered = filtered.filter(p => p.category === filterCategory);
+    }
+
+    if (filterBrand) {
+      filtered = filtered.filter(p => p.brand === filterBrand);
+    }
+
+    if (filterMinPrice) {
+      const min = parseFloat(filterMinPrice);
+      filtered = filtered.filter(p => p.price >= min);
+    }
+
+    if (filterMaxPrice) {
+      const max = parseFloat(filterMaxPrice);
+      filtered = filtered.filter(p => p.price <= max);
+    }
+
+    if (filterVisible !== 'all') {
+      const isVisible = filterVisible === 'visible';
+      filtered = filtered.filter(p => p.visible === isVisible);
+    }
+
+    if (filterFeatured !== 'all') {
+      const isFeatured = filterFeatured === 'featured';
+      filtered = filtered.filter(p => p.featured === isFeatured);
+    }
+
+    filtered.sort((a, b) => {
+      switch (sortOrder) {
+        case 'a-z':
+          return a.name.localeCompare(b.name);
+        case 'z-a':
+          return b.name.localeCompare(a.name);
+        case 'price-low':
+          return a.price - b.price;
+        case 'price-high':
+          return b.price - a.price;
+        case 'oldest':
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case 'newest':
+        default:
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }
+    });
+
+    return filtered;
+  }, [products, filterCategory, filterBrand, filterMinPrice, filterMaxPrice, filterVisible, filterFeatured, sortOrder]);
+
+  const clearFilters = () => {
+    setFilterCategory('');
+    setFilterBrand('');
+    setFilterMinPrice('');
+    setFilterMaxPrice('');
+    setFilterVisible('all');
+    setFilterFeatured('all');
+    setSortOrder('newest');
+  };
+
+  const activeFiltersCount = [
+    filterCategory,
+    filterBrand,
+    filterMinPrice,
+    filterMaxPrice,
+    filterVisible !== 'all',
+    filterFeatured !== 'all',
+  ].filter(Boolean).length;
 
   const fetchFinancingPlans = async (productId: string) => {
     const { data } = await supabase
@@ -617,7 +707,7 @@ export default function Products() {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedProductIds(new Set(products.map(p => p.id)));
+      setSelectedProductIds(new Set(filteredAndSortedProducts.map(p => p.id)));
     } else {
       setSelectedProductIds(new Set());
     }
@@ -706,8 +796,8 @@ export default function Products() {
     }
   };
 
-  const isAllSelected = products.length > 0 && selectedProductIds.size === products.length;
-  const isIndeterminate = selectedProductIds.size > 0 && selectedProductIds.size < products.length;
+  const isAllSelected = filteredAndSortedProducts.length > 0 && selectedProductIds.size === filteredAndSortedProducts.length && filteredAndSortedProducts.every(p => selectedProductIds.has(p.id));
+  const isIndeterminate = selectedProductIds.size > 0 && !isAllSelected && filteredAndSortedProducts.some(p => selectedProductIds.has(p.id));
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -796,6 +886,147 @@ export default function Products() {
           </div>
         </div>
 
+        <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex items-center text-gray-700 hover:text-blue-600 font-medium"
+              >
+                <Filter className="h-5 w-5 mr-2" />
+                Filtros
+                {activeFiltersCount > 0 && (
+                  <span className="ml-2 bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
+                    {activeFiltersCount}
+                  </span>
+                )}
+              </button>
+              {activeFiltersCount > 0 && (
+                <button
+                  onClick={clearFilters}
+                  className="ml-4 flex items-center text-red-600 hover:text-red-700 text-sm"
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Limpiar
+                </button>
+              )}
+            </div>
+            <div className="text-sm text-gray-600">
+              Mostrando {filteredAndSortedProducts.length} de {products.length} productos
+            </div>
+          </div>
+
+          {showFilters && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Categoría
+                </label>
+                <select
+                  value={filterCategory}
+                  onChange={(e) => setFilterCategory(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">Todas las categorías</option>
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.name}>{cat.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Marca
+                </label>
+                <select
+                  value={filterBrand}
+                  onChange={(e) => setFilterBrand(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">Todas las marcas</option>
+                  {availableBrands.map(brand => (
+                    <option key={brand} value={brand}>{brand}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Precio Mínimo
+                </label>
+                <input
+                  type="number"
+                  value={filterMinPrice}
+                  onChange={(e) => setFilterMinPrice(e.target.value)}
+                  placeholder="0"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Precio Máximo
+                </label>
+                <input
+                  type="number"
+                  value={filterMaxPrice}
+                  onChange={(e) => setFilterMaxPrice(e.target.value)}
+                  placeholder="999999"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Visibilidad
+                </label>
+                <select
+                  value={filterVisible}
+                  onChange={(e) => setFilterVisible(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="all">Todos</option>
+                  <option value="visible">Visibles</option>
+                  <option value="hidden">Ocultos</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Destacados
+                </label>
+                <select
+                  value={filterFeatured}
+                  onChange={(e) => setFilterFeatured(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="all">Todos</option>
+                  <option value="featured">Destacados</option>
+                  <option value="not-featured">No destacados</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Ordenar por
+                </label>
+                <select
+                  value={sortOrder}
+                  onChange={(e) => setSortOrder(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="newest">Más recientes</option>
+                  <option value="oldest">Más antiguos</option>
+                  <option value="a-z">Nombre: A-Z</option>
+                  <option value="z-a">Nombre: Z-A</option>
+                  <option value="price-low">Precio: Menor a Mayor</option>
+                  <option value="price-high">Precio: Mayor a Menor</option>
+                </select>
+              </div>
+            </div>
+          )}
+        </div>
+
         {isLoading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
@@ -845,7 +1076,7 @@ export default function Products() {
                 </thead>
 
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {products.map((product) => (
+                  {filteredAndSortedProducts.map((product) => (
                     <tr key={product.id} className={!product.visible ? 'bg-gray-50' : ''}>
                       <td className="px-3 py-4 whitespace-nowrap">
                         <input
