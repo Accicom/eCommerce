@@ -6,15 +6,28 @@ import type { Database } from '../lib/database.types';
 
 type Product = Database['public']['Tables']['products']['Row'];
 
+export interface FinancingInfo {
+  installments: number;
+  ptf: number;
+  cuota: number;
+}
+
 interface ProductCardProps {
   product: Product;
   isFeatured?: boolean;
   variant?: 'full' | 'minimal';
+  financingPlans?: FinancingInfo[];
   onWhatsAppClick?: (product: Product) => void;
 }
 
-export default function ProductCard({ product, isFeatured = false, variant = 'full' }: ProductCardProps) {
+function getBestPlan(plans?: FinancingInfo[]) {
+  if (!plans || plans.length === 0) return null;
+  return plans.reduce((best, p) => p.installments > best.installments ? p : best, plans[0]);
+}
+
+export default function ProductCard({ product, isFeatured = false, variant = 'full', financingPlans }: ProductCardProps) {
   const [isFavorite, setIsFavorite] = useState(false);
+  const bestPlan = getBestPlan(financingPlans);
 
   if (variant === 'minimal') {
     return (
@@ -44,7 +57,13 @@ export default function ProductCard({ product, isFeatured = false, variant = 'fu
                 <Truck className="h-3 w-3" />
                 <span>Envío gratis</span>
               </div>
-              <span className="text-gray-600 text-xs">Hasta 18 cuotas fijas con Crédito Accicom</span>
+              {bestPlan ? (
+                <span className="text-blue-700 font-semibold">
+                  {bestPlan.installments} cuotas de ${formatPrice(Number(bestPlan.cuota))}
+                </span>
+              ) : (
+                <span className="text-gray-600 text-xs">Hasta 18 cuotas fijas con Crédito Accicom</span>
+              )}
             </div>
           </div>
         </div>
@@ -109,9 +128,15 @@ export default function ProductCard({ product, isFeatured = false, variant = 'fu
             </div>
 
             <div className="border-t border-gray-100 pt-3">
-              <p className="text-gray-600 text-xs leading-relaxed">
-                <span className="font-semibold text-gray-800">Hasta 18 cuotas fijas</span> con Crédito Accicom
-              </p>
+              {bestPlan ? (
+                <p className="text-blue-700 text-sm leading-relaxed">
+                  <span className="font-bold">{bestPlan.installments} cuotas de ${formatPrice(Number(bestPlan.cuota))}</span>
+                </p>
+              ) : (
+                <p className="text-gray-600 text-xs leading-relaxed">
+                  <span className="font-semibold text-gray-800">Hasta 18 cuotas fijas</span> con Crédito Accicom
+                </p>
+              )}
             </div>
           </div>
         </div>

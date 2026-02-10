@@ -18,8 +18,17 @@ import type { Database } from '../../lib/database.types';
 
 type Product = Database['public']['Tables']['products']['Row'];
 type Category = Database['public']['Tables']['categories']['Row'];
+type FinancingPlan = Database['public']['Tables']['product_financing_plans']['Row'];
 
 type ImportMode = 'single' | 'bulk' | 'hide';
+
+const AVAILABLE_INSTALLMENTS = [6, 9, 12, 15, 18] as const;
+
+interface FinancingFormData {
+  enabled: boolean;
+  ptf: string;
+  cuota: string;
+}
 
 export default function Products() {
   const navigate = useNavigate();
@@ -33,6 +42,60 @@ export default function Products() {
   const [isImporting, setIsImporting] = useState(false);
   const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
+  const [financingForms, setFinancingForms] = useState<Record<number, FinancingFormData>>({});
+
+  const initFinancingForms = (plans: FinancingPlan[]) => {
+    const forms: Record<number, FinancingFormData> = {};
+    for (const inst of AVAILABLE_INSTALLMENTS) {
+      const plan = plans.find(p => p.installments === inst);
+      forms[inst] = {
+        enabled: !!plan,
+        ptf: plan ? String(plan.ptf) : '',
+        cuota: plan ? String(plan.cuota) : '',
+      };
+    }
+    setFinancingForms(forms);
+  };
+
+  const resetFinancingForms = () => {
+    const forms: Record<number, FinancingFormData> = {};
+    for (const inst of AVAILABLE_INSTALLMENTS) {
+      forms[inst] = { enabled: false, ptf: '', cuota: '' };
+    }
+    setFinancingForms(forms);
+  };
+
+  const fetchFinancingPlans = async (productId: string) => {
+    const { data } = await supabase
+      .from('product_financing_plans')
+      .select('*')
+      .eq('product_id', productId);
+    return data || [];
+  };
+
+  const saveFinancingPlans = async (productId: string) => {
+    for (const inst of AVAILABLE_INSTALLMENTS) {
+      const form = financingForms[inst];
+      if (!form) continue;
+
+      if (form.enabled && form.ptf && form.cuota) {
+        await supabase
+          .from('product_financing_plans')
+          .upsert({
+            product_id: productId,
+            installments: inst,
+            ptf: parseFloat(form.ptf),
+            cuota: parseFloat(form.cuota),
+          }, { onConflict: 'product_id,installments' });
+      } else {
+        await supabase
+          .from('product_financing_plans')
+          .delete()
+          .eq('product_id', productId)
+          .eq('installments', inst);
+      }
+    }
+  };
 
   useEffect(() => {
     checkAuth();
@@ -103,12 +166,18 @@ export default function Products() {
           .eq('id', currentProduct.id);
 
         if (error) throw error;
+        await saveFinancingPlans(currentProduct.id);
       } else {
-        const { error } = await supabase
+        const { data: newProduct, error } = await supabase
           .from('products')
-          .insert([productData]);
+          .insert([productData])
+          .select('id')
+          .single();
 
         if (error) throw error;
+        if (newProduct) {
+          await saveFinancingPlans(newProduct.id);
+        }
       }
 
       setIsModalOpen(false);
@@ -392,6 +461,50 @@ export default function Products() {
         okCount += chunk.length;
       }
 
+      const financingInstallments = [6, 9, 12, 15, 18] as const;
+      const codesWithFinancing: string[] = [];
+      const financingByCode: Record<string, { installments: number; ptf: number; cuota: number }[]> = {};
+
+      for (let i = 0; i < jsonData.length; i++) {
+        const row = jsonData[i] as any;
+        const code = toStr(getVal(row, ['code', 'Código']))?.trim();
+        if (!code) continue;
+
+        for (const inst of financingInstallments) {
+          const ptf = parseNumberFlexible(getVal(row, [`PTF-${inst}`, `ptf_${inst}`, `ptf-${inst}`]));
+          const cuota = parseNumberFlexible(getVal(row, [`Cuota-${inst}`, `cuota_${inst}`, `cuota-${inst}`]));
+          if (ptf && cuota) {
+            if (!financingByCode[code]) financingByCode[code] = [];
+            financingByCode[code].push({ installments: inst, ptf, cuota });
+            if (!codesWithFinancing.includes(code)) codesWithFinancing.push(code);
+          }
+        }
+      }
+
+      if (codesWithFinancing.length > 0) {
+        const { data: productsWithIds } = await supabase
+          .from('products')
+          .select('id, code')
+          .in('code', codesWithFinancing);
+
+        if (productsWithIds) {
+          for (const prod of productsWithIds) {
+            const plans = financingByCode[prod.code];
+            if (!plans) continue;
+            for (const plan of plans) {
+              await supabase
+                .from('product_financing_plans')
+                .upsert({
+                  product_id: prod.id,
+                  installments: plan.installments,
+                  ptf: plan.ptf,
+                  cuota: plan.cuota,
+                }, { onConflict: 'product_id,installments' });
+            }
+          }
+        }
+      }
+
       errors.push(`Éxito: Se procesaron ${okCount} fila(s) (creación/actualización por código).`);
       fetchProducts();
     } catch (error) {
@@ -417,6 +530,16 @@ export default function Products() {
       'Descripción': '',
       'Destacado': '',
       'Visible': '',
+      'PTF-6': '',
+      'Cuota-6': '',
+      'PTF-9': '',
+      'Cuota-9': '',
+      'PTF-12': '',
+      'Cuota-12': '',
+      'PTF-15': '',
+      'Cuota-15': '',
+      'PTF-18': '',
+      'Cuota-18': '',
     },
   ];
 
@@ -439,21 +562,43 @@ export default function Products() {
 };
 
 
-  const downloadProductsExcel = () => {
-    // Export en español (tal como lo tenés), y el import ahora lo entiende.
-    const excelData = products.map(product => ({
-      'Código': product.code,
-      'Nombre': product.name,
-      'Precio': product.price,
-      'Categoría': product.category,
-      'Marca': product.brand || '',
-      'Proveedor': product.supplier || '',
-      'Descripción': product.description || '',
-      'Destacado': product.featured ? 'Sí' : 'No',
-      'Visible': product.visible ? 'Sí' : 'No',
-      'URL Imagen': product.image,
-      'Fecha Creación': new Date(product.created_at).toLocaleDateString(),
-    }));
+  const downloadProductsExcel = async () => {
+    const { data: allPlans } = await supabase
+      .from('product_financing_plans')
+      .select('*');
+
+    const plansByProduct: Record<string, Record<number, { ptf: number; cuota: number }>> = {};
+    (allPlans || []).forEach(p => {
+      if (!plansByProduct[p.product_id]) plansByProduct[p.product_id] = {};
+      plansByProduct[p.product_id][p.installments] = { ptf: p.ptf, cuota: p.cuota };
+    });
+
+    const excelData = products.map(product => {
+      const plans = plansByProduct[product.id] || {};
+      return {
+        'Código': product.code,
+        'Nombre': product.name,
+        'Precio': product.price,
+        'Categoría': product.category,
+        'Marca': product.brand || '',
+        'Proveedor': product.supplier || '',
+        'Descripción': product.description || '',
+        'Destacado': product.featured ? 'Sí' : 'No',
+        'Visible': product.visible ? 'Sí' : 'No',
+        'URL Imagen': product.image,
+        'PTF-6': plans[6]?.ptf || '',
+        'Cuota-6': plans[6]?.cuota || '',
+        'PTF-9': plans[9]?.ptf || '',
+        'Cuota-9': plans[9]?.cuota || '',
+        'PTF-12': plans[12]?.ptf || '',
+        'Cuota-12': plans[12]?.cuota || '',
+        'PTF-15': plans[15]?.ptf || '',
+        'Cuota-15': plans[15]?.cuota || '',
+        'PTF-18': plans[18]?.ptf || '',
+        'Cuota-18': plans[18]?.cuota || '',
+        'Fecha Creación': new Date(product.created_at).toLocaleDateString(),
+      };
+    });
 
     const worksheet = utils.json_to_sheet(excelData);
     const workbook = utils.book_new();
@@ -602,6 +747,7 @@ export default function Products() {
               onClick={() => {
                 setImportMode('single');
                 setCurrentProduct(null);
+                resetFinancingForms();
                 setIsModalOpen(true);
               }}
               className={`flex items-center px-4 py-2 rounded-lg transition-colors ${
@@ -766,9 +912,11 @@ export default function Products() {
                       </td>
                       <td className="px-3 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button
-                          onClick={() => {
+                          onClick={async () => {
                             setImportMode('single');
                             setCurrentProduct(product);
+                            const plans = await fetchFinancingPlans(product.id);
+                            initFinancingForms(plans);
                             setIsModalOpen(true);
                           }}
                           className="text-blue-600 hover:text-blue-800 mr-3"
@@ -794,8 +942,8 @@ export default function Products() {
 
       {/* Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-2xl w-full p-6">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white rounded-lg max-w-2xl w-full p-6 my-8 max-h-[90vh] overflow-y-auto">
             {importMode === 'single' ? (
               <>
                 <h2 className="text-xl font-bold text-gray-800 mb-4">
@@ -911,6 +1059,57 @@ export default function Products() {
                       defaultValue={currentProduct?.description || ''}
                       placeholder="Ingrese una descripción detallada del producto..."
                     />
+                  </div>
+
+                  <div className="border-t border-gray-200 pt-4 mt-4">
+                    <h3 className="text-sm font-semibold text-gray-800 mb-3">Planes de Financiación (PTF)</h3>
+                    <div className="space-y-3">
+                      {AVAILABLE_INSTALLMENTS.map((inst) => {
+                        const form = financingForms[inst] || { enabled: false, ptf: '', cuota: '' };
+                        return (
+                          <div key={inst} className="flex items-center gap-3">
+                            <label className="flex items-center gap-2 w-24 flex-shrink-0">
+                              <input
+                                type="checkbox"
+                                checked={form.enabled}
+                                onChange={(e) => setFinancingForms(prev => ({
+                                  ...prev,
+                                  [inst]: { ...prev[inst], enabled: e.target.checked }
+                                }))}
+                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                              />
+                              <span className="text-sm font-medium text-gray-700">{inst} cuotas</span>
+                            </label>
+                            {form.enabled && (
+                              <>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  placeholder="PTF"
+                                  value={form.ptf}
+                                  onChange={(e) => setFinancingForms(prev => ({
+                                    ...prev,
+                                    [inst]: { ...prev[inst], ptf: e.target.value }
+                                  }))}
+                                  className="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm"
+                                />
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  placeholder="Cuota"
+                                  value={form.cuota}
+                                  onChange={(e) => setFinancingForms(prev => ({
+                                    ...prev,
+                                    [inst]: { ...prev[inst], cuota: e.target.value }
+                                  }))}
+                                  className="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm"
+                                />
+                              </>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   <div className="flex items-center space-x-2">
@@ -1052,6 +1251,11 @@ export default function Products() {
                     <li>Visible / visible (Sí/No, true/false)</li>
                     <li>Marca / brand</li>
                     <li>Proveedor / supplier</li>
+                    <li>PTF-6, Cuota-6 (plan 6 cuotas)</li>
+                    <li>PTF-9, Cuota-9 (plan 9 cuotas)</li>
+                    <li>PTF-12, Cuota-12 (plan 12 cuotas)</li>
+                    <li>PTF-15, Cuota-15 (plan 15 cuotas)</li>
+                    <li>PTF-18, Cuota-18 (plan 18 cuotas)</li>
                   </ul>
                 </div>
 

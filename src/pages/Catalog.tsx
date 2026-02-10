@@ -7,6 +7,7 @@ import { useAnalytics } from '../hooks/useAnalytics';
 import type { Database } from '../lib/database.types';
 import NewsletterPopup from '../components/NewsletterPopup';
 import ProductCard from '../components/ProductCard';
+import type { FinancingInfo } from '../components/ProductCard';
 import ProductCarousel from '../components/ProductCarousel';
 import ShowcaseGroups from '../components/ShowcaseGroups';
 import Header from '../components/Header';
@@ -27,6 +28,7 @@ export default function Catalog() {
   const [currentPage, setCurrentPage] = useState(0);
   const [sortOrder, setSortOrder] = useState<'none' | 'asc' | 'desc'>('none');
   const [activeFilterLabel, setActiveFilterLabel] = useState<string | null>(null);
+  const [financingMap, setFinancingMap] = useState<Record<string, FinancingInfo[]>>({});
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
   const { trackEvent } = useAnalytics();
@@ -86,6 +88,21 @@ export default function Catalog() {
     }
   };
 
+  const fetchFinancingForProducts = async (productIds: string[]) => {
+    if (productIds.length === 0) return;
+    const { data } = await supabase
+      .from('product_financing_plans')
+      .select('product_id, installments, ptf, cuota')
+      .in('product_id', productIds);
+
+    const map: Record<string, FinancingInfo[]> = {};
+    (data || []).forEach(p => {
+      if (!map[p.product_id]) map[p.product_id] = [];
+      map[p.product_id].push({ installments: p.installments, ptf: p.ptf, cuota: p.cuota });
+    });
+    setFinancingMap(map);
+  };
+
   const fetchFilteredProducts = async () => {
     setIsProductsLoading(true);
     try {
@@ -123,6 +140,7 @@ export default function Catalog() {
 
         if (error) throw error;
         setProducts(data || []);
+        fetchFinancingForProducts((data || []).map(p => p.id));
       }
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -142,6 +160,7 @@ export default function Catalog() {
 
       if (error) throw error;
       setProducts(data || []);
+      fetchFinancingForProducts((data || []).map(p => p.id));
       setActiveFilterLabel(null);
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -337,6 +356,7 @@ export default function Catalog() {
                     key={product.id}
                     product={product}
                     variant={window.innerWidth >= 768 ? 'full' : 'minimal'}
+                    financingPlans={financingMap[product.id]}
                   />
                 ))}
               </div>

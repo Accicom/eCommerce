@@ -7,6 +7,7 @@ import type { Database } from '../lib/database.types';
 
 type Product = Database['public']['Tables']['products']['Row'];
 type CatalogClient = Database['public']['Tables']['catalog_clients']['Row'];
+type FinancingPlan = Database['public']['Tables']['product_financing_plans']['Row'];
 
 type Step = 'dni' | 'new_client' | 'confirm_identity' | 'payment_terms' | 'success' | 'not_eligible';
 
@@ -19,7 +20,7 @@ function getStepIndex(step: Step) {
 }
 
 function StepIndicator({ currentStep }: { currentStep: Step }) {
-  const labels = ['Identificaci\u00f3n', 'Verificaci\u00f3n', 'Pago', 'Confirmaci\u00f3n'];
+  const labels = ['Identificación', 'Verificación', 'Pago', 'Confirmación'];
   const idx = getStepIndex(currentStep);
 
   return (
@@ -60,6 +61,7 @@ export default function CheckoutProcess() {
   const [step, setStep] = useState<Step>('dni');
   const [product, setProduct] = useState<Product | null>(null);
   const [client, setClient] = useState<CatalogClient | null>(null);
+  const [financingPlans, setFinancingPlans] = useState<FinancingPlan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -87,6 +89,16 @@ export default function CheckoutProcess() {
 
       if (error) throw error;
       setProduct(data);
+
+      if (data) {
+        const { data: plans } = await supabase
+          .from('product_financing_plans')
+          .select('*')
+          .eq('product_id', data.id)
+          .order('installments', { ascending: true });
+
+        setFinancingPlans(plans || []);
+      }
     } catch (err) {
       console.error('Error fetching product:', err);
     } finally {
@@ -94,12 +106,17 @@ export default function CheckoutProcess() {
     }
   };
 
+  const selectedPlan = financingPlans.find(p => p.installments === paymentTerms) || null;
+  const availableTerms = financingPlans.length > 0
+    ? financingPlans.map(p => p.installments)
+    : [6, 9, 12, 15, 18];
+
   const handleDniSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setDniError(null);
 
     if (!dni.match(/^\d{7,8}$/)) {
-      setDniError('El DNI debe tener 7 u 8 d\u00edgitos');
+      setDniError('El DNI debe tener 7 u 8 dígitos');
       return;
     }
 
@@ -121,7 +138,7 @@ export default function CheckoutProcess() {
       }
     } catch (err) {
       console.error('Error checking DNI:', err);
-      setDniError('Error al verificar el documento. Intent\u00e1 nuevamente.');
+      setDniError('Error al verificar el documento. Intentá nuevamente.');
     } finally {
       setIsSubmitting(false);
     }
@@ -134,7 +151,7 @@ export default function CheckoutProcess() {
     if (!newClient.apellido.trim()) errors.apellido = 'Requerido';
     if (!newClient.celular.trim()) errors.celular = 'Requerido';
     if (!newClient.email.trim()) errors.email = 'Requerido';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newClient.email)) errors.email = 'Email inv\u00e1lido';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newClient.email)) errors.email = 'Email inválido';
 
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
@@ -163,9 +180,9 @@ export default function CheckoutProcess() {
       setStep('confirm_identity');
     } catch (err: any) {
       if (err?.code === '23505') {
-        setError('Este DNI ya est\u00e1 registrado en el sistema.');
+        setError('Este DNI ya está registrado en el sistema.');
       } else {
-        setError('Error al crear el registro. Intent\u00e1 nuevamente.');
+        setError('Error al crear el registro. Intentá nuevamente.');
       }
     } finally {
       setIsSubmitting(false);
@@ -239,19 +256,26 @@ export default function CheckoutProcess() {
     try {
       const orderNumber = Math.floor(Math.random() * 1000000);
 
+      const orderData: any = {
+        product_id: product.id,
+        product_name: product.name,
+        quantity: 1,
+        price: product.price,
+        payment_terms: paymentTerms,
+      };
+
+      if (selectedPlan) {
+        orderData.ptf = selectedPlan.ptf;
+        orderData.cuota = selectedPlan.cuota;
+      }
+
       const { error: orderErr } = await supabase
         .from('completed_orders')
         .insert([{
           order_number: `#${orderNumber}`,
-          order_data: [{
-            product_id: product.id,
-            product_name: product.name,
-            quantity: 1,
-            price: product.price,
-            payment_terms: paymentTerms,
-          }],
-          total_amount: product.price,
-          whatsapp_message: `Orden desde marketplace - ${product.name} - ${paymentTerms} cuotas`,
+          order_data: [orderData],
+          total_amount: selectedPlan ? selectedPlan.ptf : product.price,
+          whatsapp_message: `Orden desde marketplace - ${product.name} - ${paymentTerms} cuotas${selectedPlan ? ` - Cuota: $${formatPrice(Number(selectedPlan.cuota))} - PTF: $${formatPrice(Number(selectedPlan.ptf))}` : ''}`,
           client_id: client.id,
         }]);
 
@@ -274,6 +298,8 @@ export default function CheckoutProcess() {
             productCode: product.code,
             productPrice: product.price,
             paymentTerms,
+            ptf: selectedPlan?.ptf,
+            cuota: selectedPlan?.cuota,
             orderNumber,
             timestamp: new Date().toISOString(),
           }),
@@ -285,7 +311,7 @@ export default function CheckoutProcess() {
       setStep('success');
     } catch (err) {
       console.error('Error finalizing order:', err);
-      setError('Error al procesar la orden. Intent\u00e1 nuevamente.');
+      setError('Error al procesar la orden. Intentá nuevamente.');
     } finally {
       setIsSubmitting(false);
     }
@@ -307,7 +333,7 @@ export default function CheckoutProcess() {
         <div className="container mx-auto px-4 py-12 text-center">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">Producto no encontrado</h2>
           <Link to="/catalogo" className="text-blue-600 hover:text-blue-800 font-medium">
-            {'Volver al cat\u00e1logo'}
+            Volver al catálogo
           </Link>
         </div>
       </div>
@@ -343,8 +369,8 @@ export default function CheckoutProcess() {
                     <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                       <User className="h-7 w-7 text-blue-600" />
                     </div>
-                    <h2 className="text-xl font-bold text-gray-800 mb-1">{'Identificaci\u00f3n'}</h2>
-                    <p className="text-gray-500 text-sm">{'Ingres\u00e1 tu documento para continuar'}</p>
+                    <h2 className="text-xl font-bold text-gray-800 mb-1">Identificación</h2>
+                    <p className="text-gray-500 text-sm">Ingresá tu documento para continuar</p>
                   </div>
                   <form onSubmit={handleDniSubmit} className="space-y-5">
                     <div>
@@ -375,7 +401,7 @@ export default function CheckoutProcess() {
                 <div>
                   <div className="text-center mb-6">
                     <h2 className="text-xl font-bold text-gray-800 mb-1">Completar datos</h2>
-                    <p className="text-gray-500 text-sm">{'No encontramos tu DNI. Complet\u00e1 tus datos para continuar.'}</p>
+                    <p className="text-gray-500 text-sm">No encontramos tu DNI. Completá tus datos para continuar.</p>
                   </div>
                   <form onSubmit={handleNewClientSubmit} className="space-y-4 max-w-md mx-auto">
                     <div className="grid grid-cols-2 gap-4">
@@ -412,7 +438,7 @@ export default function CheckoutProcess() {
                       {formErrors.celular && <p className="text-red-600 text-xs mt-1">{formErrors.celular}</p>}
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">{'Correo electr\u00f3nico'}</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
                       <input
                         type="email"
                         value={newClient.email}
@@ -448,7 +474,7 @@ export default function CheckoutProcess() {
                   <h2 className="text-xl font-bold text-gray-800 mb-6">Confirmar identidad</h2>
                   <div className="p-5 bg-blue-50 border border-blue-200 rounded-xl mb-6">
                     <p className="text-gray-800 text-lg">
-                      {'\u00bfUsted es '}<span className="font-bold">{client.name}</span>{'?'}
+                      ¿Usted es <span className="font-bold">{client.name}</span>?
                     </p>
                   </div>
                   <div className="flex gap-3">
@@ -456,7 +482,7 @@ export default function CheckoutProcess() {
                       onClick={handleConfirmIdentity}
                       className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-semibold"
                     >
-                      {'S\u00ed, soy yo'}
+                      Sí, soy yo
                     </button>
                     <button
                       onClick={() => { setClient(null); setDni(''); setStep('dni'); }}
@@ -475,27 +501,42 @@ export default function CheckoutProcess() {
                       <CreditCard className="h-7 w-7 text-blue-600" />
                     </div>
                     <h2 className="text-xl font-bold text-gray-800 mb-1">Plazo de pago</h2>
-                    <p className="text-gray-500 text-sm">{'Seleccion\u00e1 la cantidad de cuotas que prefer\u00eds'}</p>
+                    <p className="text-gray-500 text-sm">Seleccioná la cantidad de cuotas que preferís</p>
                   </div>
                   <div className="space-y-3 mb-8">
-                    {[6, 9, 12, 15, 18].map((term) => (
-                      <button
-                        key={term}
-                        onClick={() => setPaymentTerms(term)}
-                        className={`w-full p-4 text-left border-2 rounded-xl transition-all flex items-center justify-between ${
-                          paymentTerms === term
-                            ? 'border-blue-600 bg-blue-50 shadow-sm'
-                            : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
-                        }`}
-                      >
-                        <span className="font-bold text-lg text-gray-800">{term} cuotas</span>
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                          paymentTerms === term ? 'border-blue-600' : 'border-gray-300'
-                        }`}>
-                          {paymentTerms === term && <div className="w-2.5 h-2.5 rounded-full bg-blue-600" />}
-                        </div>
-                      </button>
-                    ))}
+                    {availableTerms.map((term) => {
+                      const plan = financingPlans.find(p => p.installments === term);
+                      return (
+                        <button
+                          key={term}
+                          onClick={() => setPaymentTerms(term)}
+                          className={`w-full p-4 text-left border-2 rounded-xl transition-all flex items-center justify-between ${
+                            paymentTerms === term
+                              ? 'border-blue-600 bg-blue-50 shadow-sm'
+                              : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          <div>
+                            <span className="font-bold text-lg text-gray-800">{term} cuotas</span>
+                            {plan && (
+                              <p className="text-xs text-gray-500 mt-0.5">PTF: ${formatPrice(Number(plan.ptf))}</p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3">
+                            {plan && (
+                              <span className="text-lg font-bold text-blue-700">
+                                ${formatPrice(Number(plan.cuota))}<span className="text-xs font-normal text-gray-500">/mes</span>
+                              </span>
+                            )}
+                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                              paymentTerms === term ? 'border-blue-600' : 'border-gray-300'
+                            }`}>
+                              {paymentTerms === term && <div className="w-2.5 h-2.5 rounded-full bg-blue-600" />}
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                   <button
                     onClick={handleFinalizeOrder}
@@ -541,7 +582,7 @@ export default function CheckoutProcess() {
                     to="/catalogo"
                     className="inline-block bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors font-semibold"
                   >
-                    {'Volver al cat\u00e1logo'}
+                    Volver al catálogo
                   </Link>
                 </div>
               )}
@@ -561,14 +602,26 @@ export default function CheckoutProcess() {
               </div>
               <h4 className="font-semibold text-gray-800 text-sm mb-1 line-clamp-2">{product.name}</h4>
               {product.brand && <p className="text-xs text-gray-500 mb-1">{product.brand}</p>}
-              <p className="text-xs text-gray-400 mb-3">{'C\u00f3d: '}{product.code}</p>
-              <div className="border-t border-gray-100 pt-3">
+              <p className="text-xs text-gray-400 mb-3">Cód: {product.code}</p>
+              <div className="border-t border-gray-100 pt-3 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Total</span>
-                  <span className="text-2xl font-bold text-gray-900">${formatPrice(Number(product.price))}</span>
+                  <span className="text-sm text-gray-600">Precio</span>
+                  <span className="text-lg font-bold text-gray-900">${formatPrice(Number(product.price))}</span>
                 </div>
-                {paymentTerms && (
-                  <p className="text-xs text-gray-500 text-right mt-1">
+                {paymentTerms && selectedPlan && (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">PTF ({paymentTerms} cuotas)</span>
+                      <span className="text-lg font-bold text-gray-900">${formatPrice(Number(selectedPlan.ptf))}</span>
+                    </div>
+                    <div className="flex items-center justify-between bg-blue-50 -mx-5 px-5 py-2">
+                      <span className="text-sm font-medium text-blue-800">Cuota mensual</span>
+                      <span className="text-xl font-bold text-blue-700">${formatPrice(Number(selectedPlan.cuota))}</span>
+                    </div>
+                  </>
+                )}
+                {paymentTerms && !selectedPlan && (
+                  <p className="text-xs text-gray-500 text-right">
                     en {paymentTerms} cuotas
                   </p>
                 )}

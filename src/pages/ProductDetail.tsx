@@ -7,11 +7,13 @@ import { useAnalytics } from '../hooks/useAnalytics';
 import type { Database } from '../lib/database.types';
 
 type Product = Database['public']['Tables']['products']['Row'];
+type FinancingPlan = Database['public']['Tables']['product_financing_plans']['Row'];
 
 export default function ProductDetail() {
   const { code } = useParams();
   const navigate = useNavigate();
   const [product, setProduct] = useState<Product | null>(null);
+  const [financingPlans, setFinancingPlans] = useState<FinancingPlan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { trackEvent } = useAnalytics();
 
@@ -30,10 +32,17 @@ export default function ProductDetail() {
 
       if (error) throw error;
       setProduct(data);
-      
-      // Track product view
+
       if (data) {
         trackEvent('view_item', 'ecommerce', data.name, Number(data.price));
+
+        const { data: plans } = await supabase
+          .from('product_financing_plans')
+          .select('*')
+          .eq('product_id', data.id)
+          .order('installments', { ascending: true });
+
+        setFinancingPlans(plans || []);
       }
     } catch (error) {
       console.error('Error fetching product:', error);
@@ -114,11 +123,35 @@ export default function ProductDetail() {
                 </div>
               </div>
 
-              <div className="bg-gray-50 p-4 rounded-lg mb-6 border border-gray-200">
-                <p className="text-gray-700 text-center text-sm leading-relaxed">
-                  <span className="font-semibold">Hasta 18 cuotas fijas</span> con Crédito Accicom
-                </p>
-              </div>
+              {financingPlans.length > 0 ? (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg mb-6 overflow-hidden">
+                  <div className="px-4 py-3 bg-blue-100 border-b border-blue-200">
+                    <p className="text-sm font-bold text-blue-900">Planes de financiación</p>
+                  </div>
+                  <div className="divide-y divide-blue-100">
+                    {financingPlans.map((plan) => (
+                      <div key={plan.id} className="px-4 py-3 flex items-center justify-between">
+                        <span className="text-sm font-semibold text-gray-800">{plan.installments} cuotas</span>
+                        <div className="text-right">
+                          <span className="text-lg font-bold text-blue-700">
+                            ${formatPrice(Number(plan.cuota))}
+                          </span>
+                          <span className="text-xs text-gray-500 ml-1">/mes</span>
+                          <p className="text-xs text-gray-500">
+                            PTF: ${formatPrice(Number(plan.ptf))}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-gray-50 p-4 rounded-lg mb-6 border border-gray-200">
+                  <p className="text-gray-700 text-center text-sm leading-relaxed">
+                    <span className="font-semibold">Hasta 18 cuotas fijas</span> con Crédito Accicom
+                  </p>
+                </div>
+              )}
 
               <button
                 onClick={handleBuyClick}

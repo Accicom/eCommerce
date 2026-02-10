@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import ProductCard from './ProductCard';
+import type { FinancingInfo } from './ProductCard';
 import type { Database } from '../lib/database.types';
 
 type Product = Database['public']['Tables']['products']['Row'];
@@ -15,7 +16,7 @@ interface GroupWithProducts {
   products: Product[];
 }
 
-function ShowcaseRow({ group }: { group: GroupWithProducts }) {
+function ShowcaseRow({ group, financingMap }: { group: GroupWithProducts; financingMap: Record<string, FinancingInfo[]> }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -92,7 +93,7 @@ function ShowcaseRow({ group }: { group: GroupWithProducts }) {
                 key={product.id}
                 className="flex-shrink-0 w-[45%] sm:w-[30%] md:w-[23%] lg:w-[23%]"
               >
-                <ProductCard product={product} variant="full" />
+                <ProductCard product={product} variant="full" financingPlans={financingMap[product.id]} />
               </div>
             ))}
           </div>
@@ -105,6 +106,7 @@ function ShowcaseRow({ group }: { group: GroupWithProducts }) {
 export default function ShowcaseGroups() {
   const [groups, setGroups] = useState<GroupWithProducts[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [financingMap, setFinancingMap] = useState<Record<string, FinancingInfo[]>>({});
 
   useEffect(() => {
     loadShowcaseGroups();
@@ -195,6 +197,21 @@ export default function ShowcaseGroups() {
       }
 
       setGroups(result);
+
+      const allProductIds = result.flatMap(g => g.products.map(p => p.id));
+      if (allProductIds.length > 0) {
+        const { data: plans } = await supabase
+          .from('product_financing_plans')
+          .select('product_id, installments, ptf, cuota')
+          .in('product_id', allProductIds);
+
+        const map: Record<string, FinancingInfo[]> = {};
+        (plans || []).forEach(p => {
+          if (!map[p.product_id]) map[p.product_id] = [];
+          map[p.product_id].push({ installments: p.installments, ptf: p.ptf, cuota: p.cuota });
+        });
+        setFinancingMap(map);
+      }
     } catch (error) {
       console.error('ShowcaseGroups error:', error);
       setGroups([]);
@@ -208,7 +225,7 @@ export default function ShowcaseGroups() {
   return (
     <div>
       {groups.map(group => (
-        <ShowcaseRow key={group.id} group={group} />
+        <ShowcaseRow key={group.id} group={group} financingMap={financingMap} />
       ))}
     </div>
   );
