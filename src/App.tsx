@@ -49,6 +49,7 @@ function MaintenanceWrapper({ children }: { children: React.ReactNode }) {
     endTime: string | null;
   } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [currentPath, setCurrentPath] = useState(window.location.pathname);
 
   useEffect(() => {
     checkMaintenanceMode();
@@ -70,6 +71,33 @@ function MaintenanceWrapper({ children }: { children: React.ReactNode }) {
 
     return () => {
       supabase.removeChannel(channel);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleLocationChange = () => {
+      setCurrentPath(window.location.pathname);
+    };
+
+    window.addEventListener('popstate', handleLocationChange);
+
+    const originalPushState = window.history.pushState;
+    const originalReplaceState = window.history.replaceState;
+
+    window.history.pushState = function(...args) {
+      originalPushState.apply(window.history, args);
+      handleLocationChange();
+    };
+
+    window.history.replaceState = function(...args) {
+      originalReplaceState.apply(window.history, args);
+      handleLocationChange();
+    };
+
+    return () => {
+      window.removeEventListener('popstate', handleLocationChange);
+      window.history.pushState = originalPushState;
+      window.history.replaceState = originalReplaceState;
     };
   }, []);
 
@@ -108,7 +136,6 @@ function MaintenanceWrapper({ children }: { children: React.ReactNode }) {
   }
 
   const isMaintenanceMode = maintenanceSettings?.enabled || false;
-  const currentPath = window.location.pathname;
   const isAdminRoute = currentPath.startsWith('/admin');
   const isCatalogRoute = currentPath === '/catalogo' || currentPath.startsWith('/producto/') || currentPath.startsWith('/checkout/');
 
