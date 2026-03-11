@@ -1,5 +1,5 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import InfoBanner from './components/InfoBanner';
 import Header from './components/Header';
 import Banner from './components/Banner';
@@ -12,6 +12,7 @@ import Branches from './components/Branches';
 import ContactForm from './components/ContactForm';
 import Footer from './components/Footer';
 import WhatsAppButton from './components/WhatsAppButton';
+import MaintenanceScreen from './components/MaintenanceScreen';
 import Catalog from './pages/Catalog';
 import ProductDetail from './pages/ProductDetail';
 import CheckoutProcess from './pages/CheckoutProcess';
@@ -28,7 +29,9 @@ import CatalogClients from './pages/admin/CatalogClients';
 import BranchesManagement from './pages/admin/Branches';
 import Testing from './pages/admin/Testing';
 import ShowcaseGroupsManagement from './pages/admin/ShowcaseGroups';
+import MaintenanceManagement from './pages/admin/Maintenance';
 import { useAnalytics } from './hooks/useAnalytics';
+import { supabase } from './lib/supabase';
 
 // Analytics wrapper component
 function AnalyticsWrapper({ children }: { children: React.ReactNode }) {
@@ -36,12 +39,98 @@ function AnalyticsWrapper({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Maintenance mode wrapper component
+function MaintenanceWrapper({ children }: { children: React.ReactNode }) {
+  const [maintenanceSettings, setMaintenanceSettings] = useState<{
+    enabled: boolean;
+    title: string;
+    message: string;
+    endTime: string | null;
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    checkMaintenanceMode();
+
+    const channel = supabase
+      .channel('site_settings_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'site_settings'
+        },
+        () => {
+          checkMaintenanceMode();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const checkMaintenanceMode = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('site_settings')
+        .select('maintenance_mode, maintenance_title, maintenance_message, maintenance_end_time')
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (data) {
+        setMaintenanceSettings({
+          enabled: data.maintenance_mode,
+          title: data.maintenance_title,
+          message: data.maintenance_message,
+          endTime: data.maintenance_end_time
+        });
+      }
+    } catch (error) {
+      console.error('Error checking maintenance mode:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
+
+  const isMaintenanceMode = maintenanceSettings?.enabled || false;
+  const currentPath = window.location.pathname;
+  const isAdminRoute = currentPath.startsWith('/admin');
+  const isCatalogRoute = currentPath === '/catalogo' || currentPath.startsWith('/producto/') || currentPath.startsWith('/checkout/');
+
+  if (isMaintenanceMode && !isAdminRoute && isCatalogRoute) {
+    return (
+      <MaintenanceScreen
+        title={maintenanceSettings?.title}
+        message={maintenanceSettings?.message}
+        endTime={maintenanceSettings?.endTime}
+      />
+    );
+  }
+
+  return <>{children}</>;
+}
+
 function App() {
   return (
     <Router>
       <AnalyticsWrapper>
-        <InfoBanner />
-        <Routes>
+        <MaintenanceWrapper>
+          <InfoBanner />
+          <Routes>
           {/* Rutas públicas */}
           <Route path="/" element={
             <div className="min-h-screen bg-gray-100">
@@ -96,8 +185,10 @@ function App() {
           <Route path="/admin/catalog-clients" element={<CatalogClients />} />
           <Route path="/admin/branches" element={<BranchesManagement />} />
           <Route path="/admin/showcase-groups" element={<ShowcaseGroupsManagement />} />
+          <Route path="/admin/maintenance" element={<MaintenanceManagement />} />
           <Route path="/admin/testing" element={<Testing />} />
         </Routes>
+        </MaintenanceWrapper>
       </AnalyticsWrapper>
     </Router>
   );
