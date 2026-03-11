@@ -13,6 +13,7 @@ import ContactForm from './components/ContactForm';
 import Footer from './components/Footer';
 import WhatsAppButton from './components/WhatsAppButton';
 import MaintenanceScreen from './components/MaintenanceScreen';
+import WaveDivider from './components/WaveDivider';
 import Catalog from './pages/Catalog';
 import ProductDetail from './pages/ProductDetail';
 import CheckoutProcess from './pages/CheckoutProcess';
@@ -139,10 +140,15 @@ function App() {
                 <Banner />
                 <MainOptions />
                 <Benefits />
+                <WaveDivider fromColor="#eff6ff" toColor="#ffffff" />
                 <ProductCarousel />
+                <WaveDivider fromColor="#ffffff" toColor="rgba(239, 246, 255, 0.5)" />
                 <Testimonials />
+                <WaveDivider fromColor="rgba(239, 246, 255, 0.5)" toColor="#ffffff" />
                 <FAQ />
+                <WaveDivider fromColor="#ffffff" toColor="rgba(239, 246, 255, 0.3)" />
                 <Branches />
+                <WaveDivider fromColor="rgba(239, 246, 255, 0.3)" toColor="#ffffff" />
                 <ContactForm />
               </main>
               <Footer />

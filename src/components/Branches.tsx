@@ -47,7 +47,7 @@ export default function Branches() {
 
   if (isLoading) {
     return (
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-blue-50/30">
         <div className="container mx-auto px-4">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
@@ -58,7 +58,7 @@ export default function Branches() {
   }
 
   return (
-    <section className="py-16 bg-white">
+    <section className="py-16 bg-blue-50/30">
       <div className="container mx-auto px-4">
         <h2 className="text-3xl font-bold text-center text-gray-800 mb-12">
           Nuestras Sucursales

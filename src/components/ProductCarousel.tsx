@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, ShoppingBag } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import ProductCard from './ProductCard';
+import type { FinancingInfo } from './ProductCard';
 import type { Database } from '../lib/database.types';
 
 type Product = Database['public']['Tables']['products']['Row'];
@@ -11,6 +12,7 @@ export default function ProductCarousel() {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [currentStartIndex, setCurrentStartIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [financingMap, setFinancingMap] = useState<Record<string, FinancingInfo[]>>({});
 
   // Número de productos visibles por vez
   const productsVisible = 4; // Siempre 4 en desktop, se ajusta con CSS en mobile
@@ -31,6 +33,20 @@ export default function ProductCarousel() {
 
       if (error) throw error;
       setFeaturedProducts(data || []);
+
+      if (data && data.length > 0) {
+        const { data: plans } = await supabase
+          .from('product_financing_plans')
+          .select('product_id, installments, ptf, cuota')
+          .in('product_id', data.map(p => p.id));
+
+        const map: Record<string, FinancingInfo[]> = {};
+        (plans || []).forEach(p => {
+          if (!map[p.product_id]) map[p.product_id] = [];
+          map[p.product_id].push({ installments: p.installments, ptf: p.ptf, cuota: p.cuota });
+        });
+        setFinancingMap(map);
+      }
     } catch (error) {
       console.error('Error fetching featured products:', error);
     } finally {
@@ -75,13 +91,13 @@ export default function ProductCarousel() {
   }
 
   return (
-    <section className="py-8 md:py-16 bg-blue-600">
+    <section className="py-8 md:py-16 bg-white">
       <div className="container mx-auto px-4">
         <div className="text-center mb-6 md:mb-12">
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">
             Productos Destacados
           </h2>
-          <p className="text-sm md:text-base text-white/90">
+          <p className="text-sm md:text-base text-gray-600">
             Descubre nuestros productos más populares con financiamiento flexible
           </p>
         </div>
@@ -115,12 +131,13 @@ export default function ProductCarousel() {
                 transform: `translateX(-${currentStartIndex * (100 / productsVisible + 1)}%)`
               }}
             >
-              {featuredProducts.map((product, index) => (
+              {featuredProducts.map((product) => (
                 <div key={product.id} className="flex-shrink-0 w-1/2 md:w-1/4">
                   <ProductCard
                     product={product}
                     variant="minimal"
                     isFeatured={true}
+                    financingPlans={financingMap[product.id]}
                   />
                 </div>
               ))}
@@ -137,7 +154,7 @@ export default function ProductCarousel() {
                   className={`w-2 h-2 rounded-full transition-colors ${
                     currentStartIndex === index
                       ? 'bg-blue-600'
-                      : 'bg-gray-300'
+                      : 'bg-blue-200'
                   }`}
                   aria-label={`Ir al producto ${index + 1}`}
                 />
