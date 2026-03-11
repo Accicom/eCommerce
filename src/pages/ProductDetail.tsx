@@ -124,26 +124,31 @@ export default function ProductDetail() {
               </div>
 
               {financingPlans.length > 0 ? (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg mb-6 overflow-hidden">
-                  <div className="px-4 py-3 bg-blue-100 border-b border-blue-200">
-                    <p className="text-sm font-bold text-blue-900">Planes de financiación</p>
-                  </div>
-                  <div className="divide-y divide-blue-100">
-                    {financingPlans.map((plan) => (
-                      <div key={plan.id} className="px-4 py-3 flex items-center justify-between">
-                        <span className="text-sm font-semibold text-gray-800">{plan.installments} cuotas</span>
-                        <div className="text-right">
-                          <span className="text-lg font-bold text-blue-700">
-                            ${formatPrice(Number(plan.cuota))}
-                          </span>
-                          <span className="text-xs text-gray-500 ml-1">/mes</span>
-                          <p className="text-xs text-gray-500">
-                            PTF: ${formatPrice(Number(plan.ptf))}
-                          </p>
+                <div className="mb-6">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg overflow-hidden">
+                    <div className="px-4 py-3 bg-blue-100 border-b border-blue-200">
+                      <p className="text-sm font-bold text-blue-900">Planes de financiación</p>
+                    </div>
+                    <div className="divide-y divide-blue-100">
+                      {financingPlans.map((plan) => (
+                        <div key={plan.id} className="px-4 py-3 flex items-center justify-between">
+                          <span className="text-sm font-semibold text-gray-800">{plan.installments} cuotas</span>
+                          <div className="text-right">
+                            <span className="text-lg font-bold text-blue-700">
+                              ${formatPrice(Number(plan.cuota))}
+                            </span>
+                            <span className="text-xs text-gray-500 ml-1">/mes</span>
+                            <p className="text-xs text-gray-500">
+                              PTF: ${formatPrice(Number(plan.ptf))}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
+                  <p className="text-xs text-gray-500 mt-2 px-1">
+                    *Los valores publicados son de referencia para perfiles crediticios de bajo riesgo y pueden ajustarse según la evaluación del solicitante
+                  </p>
                 </div>
               ) : (
                 <div className="bg-gray-50 p-4 rounded-lg mb-6 border border-gray-200">
