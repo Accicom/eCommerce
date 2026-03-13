@@ -1,19 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Plus,
-  Edit2,
-  Trash2,
-  ArrowLeft,
-  Star,
-  Upload,
-  FileSpreadsheet,
-  Eye,
-  EyeOff,
-  Download,
-  Filter,
-  X,
-} from 'lucide-react';
+import { Plus, CreditCard as Edit2, Trash2, ArrowLeft, Star, Upload, FileSpreadsheet, Eye, EyeOff, Download, Filter, X, Search } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { read, utils, write } from 'xlsx';
 import type { Database } from '../../lib/database.types';
@@ -54,6 +41,9 @@ export default function Products() {
   const [filterFeatured, setFilterFeatured] = useState<string>('all');
   const [sortOrder, setSortOrder] = useState<string>('newest');
   const [showFilters, setShowFilters] = useState(false);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [currentPage, setCurrentPage] = useState<number>(0);
+  const PRODUCTS_PER_PAGE = 500;
 
   const initFinancingForms = (plans: FinancingPlan[]) => {
     const forms: Record<number, FinancingFormData> = {};
@@ -86,6 +76,15 @@ export default function Products() {
 
   const filteredAndSortedProducts = useMemo(() => {
     let filtered = [...products];
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      filtered = filtered.filter(p =>
+        p.code.toLowerCase().includes(q) ||
+        p.name.toLowerCase().includes(q) ||
+        (p.brand?.toLowerCase() || '').includes(q)
+      );
+    }
 
     if (filterCategory) {
       filtered = filtered.filter(p => p.category === filterCategory);
@@ -134,7 +133,13 @@ export default function Products() {
     });
 
     return filtered;
-  }, [products, filterCategory, filterBrand, filterMinPrice, filterMaxPrice, filterVisible, filterFeatured, sortOrder]);
+  }, [products, searchQuery, filterCategory, filterBrand, filterMinPrice, filterMaxPrice, filterVisible, filterFeatured, sortOrder]);
+
+  const totalPages = Math.ceil(filteredAndSortedProducts.length / PRODUCTS_PER_PAGE);
+  const paginatedProducts = filteredAndSortedProducts.slice(
+    currentPage * PRODUCTS_PER_PAGE,
+    (currentPage + 1) * PRODUCTS_PER_PAGE
+  );
 
   const clearFilters = () => {
     setFilterCategory('');
@@ -144,6 +149,8 @@ export default function Products() {
     setFilterVisible('all');
     setFilterFeatured('all');
     setSortOrder('newest');
+    setSearchQuery('');
+    setCurrentPage(0);
   };
 
   const activeFiltersCount = [
@@ -653,6 +660,22 @@ export default function Products() {
 
 
   const downloadProductsExcel = async () => {
+    let allProducts: Product[] = [];
+    let from = 0;
+    const batchSize = 1000;
+    while (true) {
+      const { data: batch, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, from + batchSize - 1);
+      if (error) break;
+      if (!batch || batch.length === 0) break;
+      allProducts = allProducts.concat(batch);
+      if (batch.length < batchSize) break;
+      from += batchSize;
+    }
+
     const { data: allPlans } = await supabase
       .from('product_financing_plans')
       .select('*');
@@ -663,7 +686,7 @@ export default function Products() {
       plansByProduct[p.product_id][p.installments] = { ptf: p.ptf, cuota: p.cuota };
     });
 
-    const excelData = products.map(product => {
+    const excelData = allProducts.map(product => {
       const plans = plansByProduct[product.id] || {};
       return {
         'Código': product.code,
@@ -707,7 +730,7 @@ export default function Products() {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedProductIds(new Set(filteredAndSortedProducts.map(p => p.id)));
+      setSelectedProductIds(new Set(paginatedProducts.map(p => p.id)));
     } else {
       setSelectedProductIds(new Set());
     }
@@ -796,8 +819,8 @@ export default function Products() {
     }
   };
 
-  const isAllSelected = filteredAndSortedProducts.length > 0 && selectedProductIds.size === filteredAndSortedProducts.length && filteredAndSortedProducts.every(p => selectedProductIds.has(p.id));
-  const isIndeterminate = selectedProductIds.size > 0 && !isAllSelected && filteredAndSortedProducts.some(p => selectedProductIds.has(p.id));
+  const isAllSelected = paginatedProducts.length > 0 && paginatedProducts.every(p => selectedProductIds.has(p.id));
+  const isIndeterminate = selectedProductIds.size > 0 && !isAllSelected && paginatedProducts.some(p => selectedProductIds.has(p.id));
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -887,6 +910,26 @@ export default function Products() {
         </div>
 
         <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+          <div className="mb-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Buscar por código, nombre o marca..."
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(0); }}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => { setSearchQuery(''); setCurrentPage(0); }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </div>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center">
               <button
@@ -913,6 +956,7 @@ export default function Products() {
             </div>
             <div className="text-sm text-gray-600">
               Mostrando {filteredAndSortedProducts.length} de {products.length} productos
+              {totalPages > 1 && ` · Página ${currentPage + 1} de ${totalPages}`}
             </div>
           </div>
 
@@ -1076,7 +1120,14 @@ export default function Products() {
                 </thead>
 
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredAndSortedProducts.map((product) => (
+                  {paginatedProducts.length === 0 ? (
+                    <tr>
+                      <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
+                        No se encontraron productos
+                      </td>
+                    </tr>
+                  ) : null}
+                  {paginatedProducts.map((product) => (
                     <tr key={product.id} className={!product.visible ? 'bg-gray-50' : ''}>
                       <td className="px-3 py-4 whitespace-nowrap">
                         <input
@@ -1167,6 +1218,57 @@ export default function Products() {
 
               </table>
             </div>
+            {totalPages > 1 && (
+              <div className="px-4 py-3 border-t flex items-center justify-between">
+                <div className="text-sm text-gray-600">
+                  {currentPage * PRODUCTS_PER_PAGE + 1}–{Math.min((currentPage + 1) * PRODUCTS_PER_PAGE, filteredAndSortedProducts.length)} de {filteredAndSortedProducts.length} productos
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setCurrentPage(0)}
+                    disabled={currentPage === 0}
+                    className="px-3 py-1.5 text-sm border rounded-lg disabled:opacity-40 hover:bg-gray-50 transition-colors"
+                  >
+                    «
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
+                    disabled={currentPage === 0}
+                    className="px-3 py-1.5 text-sm border rounded-lg disabled:opacity-40 hover:bg-gray-50 transition-colors"
+                  >
+                    Anterior
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => i)
+                    .filter(i => Math.abs(i - currentPage) <= 2)
+                    .map(i => (
+                      <button
+                        key={i}
+                        onClick={() => setCurrentPage(i)}
+                        className={`px-3 py-1.5 text-sm border rounded-lg transition-colors ${
+                          i === currentPage ? 'bg-blue-600 text-white border-blue-600' : 'hover:bg-gray-50'
+                        }`}
+                      >
+                        {i + 1}
+                      </button>
+                    ))
+                  }
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
+                    disabled={currentPage === totalPages - 1}
+                    className="px-3 py-1.5 text-sm border rounded-lg disabled:opacity-40 hover:bg-gray-50 transition-colors"
+                  >
+                    Siguiente
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage(totalPages - 1)}
+                    disabled={currentPage === totalPages - 1}
+                    className="px-3 py-1.5 text-sm border rounded-lg disabled:opacity-40 hover:bg-gray-50 transition-colors"
+                  >
+                    »
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
