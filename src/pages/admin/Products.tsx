@@ -223,13 +223,22 @@ export default function Products() {
 
   const fetchProducts = async () => {
     try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setProducts(data || []);
+      let allProducts: Product[] = [];
+      let from = 0;
+      const batchSize = 1000;
+      while (true) {
+        const { data: batch, error } = await supabase
+          .from('products')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .range(from, from + batchSize - 1);
+        if (error) throw error;
+        if (!batch || batch.length === 0) break;
+        allProducts = allProducts.concat(batch);
+        if (batch.length < batchSize) break;
+        from += batchSize;
+      }
+      setProducts(allProducts);
     } catch (error) {
       console.error('Error fetching products:', error);
     } finally {
